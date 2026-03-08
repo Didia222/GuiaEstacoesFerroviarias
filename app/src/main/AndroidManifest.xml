@@ -41,5 +41,7 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+
+        <activity android:name=".ItinerarioActivity" android:parentActivityName=".HorariosActivity" /><activity android:name=".ItinerarioActivity" android:parentActivityName=".HorariosActivity" />
     </application>
 </manifest>
