@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/tvNomeEstacao"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nome da Estação"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/tvDescricao"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Descrição ou tipo de estação"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp"
+        android:textColor="@android:color/darker_gray" />
+
+    <Button
+        android:id="@+id/btnVerHorarios"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Ver Próximos Comboios"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white" />
+
+    <Button
+        android:id="@+id/btnVerMais"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Detalhes Históricos"
+        android:backgroundTint="#757575"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

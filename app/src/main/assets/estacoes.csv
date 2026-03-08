@@ -1,0 +1,559 @@
+latitude,longitude,nome,tipo
+38.684354,-9.149702,25 De Abril,station
+39.44019,-8.194319,Abrantes,station
+40.251341,-8.450223,Adémia,halt
+41.23712,-8.669599,Aeroporto,station
+41.775622,-8.86161,Afife,halt
+41.050513,-8.651162,Aguda,halt
+40.613243,-8.45321,Aguieira,halt
+40.415208,-8.456837,Aguim,halt
+39.793586,-8.589321,Albergaria Dos Doze,station
+37.128694,-8.233018,Albufeira - Ferreiras,station
+40.133866,-7.448779,Alcaide,halt
+39.919286,-7.436288,Alcains,station
+37.169914,-8.348671,Alcantarilha,station
+40.200552,-7.517209,Alcaria,halt
+38.406929,-8.095487,Alcáçovas,halt
+38.702355,-9.174024,Alcântara-Mar,station
+38.707411,-9.173268,Alcântara-Terra,station
+40.600459,-6.88579,Aldeia,halt
+41.176459,-7.377806,Alegria,halt
+39.473672,-8.186848,Alferrarede,station
+37.167902,-8.303227,Algoz,halt
+38.69838,-9.229387,Algés,station
+38.923934,-9.011412,Alhandra,station
+38.651804,-9.026538,Alhos Vedros,halt
+41.148592,-8.610975,Aliados,station
+38.676627,-9.164275,Almada,station
+37.095095,-8.023951,Almancil,halt
+39.46232,-8.374042,Almourol,station
+40.095139,-7.461931,Alpedrinha,halt
+38.749895,-9.179795,Alto Dos Moinhos,station
+41.648426,-8.739618,Alvarães,halt
+39.472314,-8.044638,Alvega-Ortiga,halt
+38.88988,-9.03411,Alverca,station
+38.232722,-7.999985,Alvito,station
+38.758424,-9.21833,Amadora Este,station
+40.192338,-8.544118,Ameal,halt
+38.779605,-9.159457,Ameixoeira,station
+37.690014,-8.414934,Amoreiras - Odemira,station
+38.660527,-9.157318,António Gedeão,station
+41.216886,-8.641033,Araújo,station
+41.106399,-8.007411,Aregos,station
+41.684107,-8.799321,Areia - Darque,halt
+41.489987,-8.508877,Arentim,station
+41.72115,-8.855573,Areosa,halt
+40.909237,-8.501033,Arrifana,halt
+39.096845,-7.333348,Arronches,halt
+41.19674,-8.630636,Arroteia,halt
+39.138877,-7.382279,Assumar,halt
+40.808416,-8.585402,Avanca,halt
+40.643387,-8.640455,Aveiro,station
+41.520141,-8.468343,Aveleda,halt
+38.719019,-9.144814,Avenida,station
+39.068443,-8.866375,Azambuja,station
+40.639897,-8.591874,Azurva,halt
+38.65958,-9.044338,Baixa Da Banheira,halt
+40.67738,-7.327773,Baraçal,halt
+39.526022,-7.835059,Barca Da Amieira - Envendos,station
+41.536782,-8.608996,Barcelos,station
+41.140528,-7.887456,Barqueiros,halt
+39.461612,-8.435241,Barquinha,station
+39.481953,-8.001241,Barragem De Belver,halt
+38.652901,-9.079272,Barreiro,station
+38.659773,-9.071578,Barreiro-A,halt
+41.38981,-8.526176,Barrimau,halt
+41.646264,-8.701085,Barroselas,station
+41.143201,-8.608241,Batalha,halt
+38.018338,-7.85839,Beja,station
+38.747535,-9.117662,Bela Vista,station
+40.333363,-7.336118,Belmonte - Manteigas,station
+39.491993,-7.958698,Belver,station
+38.696178,-9.197448,Belém,halt
+39.352428,-8.135624,Bemposta,halt
+40.214512,-8.456108,Bencanta,halt
+40.434877,-7.268298,Benespera,halt
+39.788257,-7.562218,Benquerenças,halt
+38.673332,-9.166616,Bento Gonçalves,station
+38.710759,-9.145797,Bica - Largo Do Calhariz,halt
+38.708617,-9.146769,Bica - Rua De São Paulo,halt
+40.122362,-8.764569,Bifurcação De Lares,station
+38.663956,-9.190352,Boa Esperança,station
+38.806846,-9.094679,Bobadela,halt
+41.149774,-8.605829,Bolhão,station
+37.12255,-8.15227,Boliqueime,station
+37.014033,-7.921016,Bom João,halt
+39.265091,-9.153332,Bombarral,station
+41.237517,-8.66524,Botica,station
+41.548046,-8.434464,Braga,station
+38.747091,-9.1028,Braço De Prata,station
+41.183883,-8.69151,Brito Capelo,station
+41.235268,-8.274224,Bustelo,halt
+40.58723,-8.498065,Cabanões,halt
+41.22056,-8.535696,Cabeda,halt
+38.762962,-9.104055,Cabo Ruivo,station
+37.176378,-7.538099,Cacela,station
+40.684786,-8.598172,Cacia,station
+38.68755,-9.147383,Cacilhas,station
+38.705979,-9.145737,Cais Do Sodré,station
+39.406746,-9.140259,Caldas Da Rainha,station
+41.152898,-7.82667,Caldas De Moledo,halt
+41.874058,-8.834267,Caminha,station
+41.150734,-8.585639,Campanhã,station
+41.148749,-8.598693,Campo 24 De Agosto,station
+38.741114,-9.146784,Campo Pequeno,station
+38.732509,-9.16774,Campolide,station
+38.731508,-9.168862,Campolide-A,station
+40.491061,-7.90649,Canas-Felgueira,station
+40.716364,-8.564004,Canelas,halt
+41.363683,-8.437651,Caniços,station
+41.585889,-8.632712,Carapeços,halt
+38.687829,-9.337319,Carcavelos,station
+40.305964,-7.370675,Caria,halt
+38.759228,-9.192713,Carnide,station
+41.158558,-8.621896,Carolina Michaelis,station
+39.548587,-8.462835,Carrascal-Delongo,halt
+39.005522,-8.95373,Carregado,halt
+40.433297,-8.007597,Carregal Do Sal,station
+41.486928,-8.56411,Carreira,halt
+41.750411,-8.863361,Carreço-A,halt
+41.97984,-8.702663,Carvalha-A,halt
+40.635405,-8.452891,Carvalhal Da Portela,halt
+40.925112,-8.626167,Carvalheira - Maceda,halt
+39.57114,-8.395478,Carvalhos De Figueiredo,halt
+38.49821,-8.158222,Casa Branca,station
+41.160628,-8.628686,Casa Da Música,station
+38.642494,-9.151785,Casa Do Povo,station
+40.204772,-8.48388,Casais,halt
+40.57944,-8.48791,Casal Do Álvaro,halt
+38.700875,-9.417913,Cascais,station
+38.989068,-8.965362,Castanheira Do Ribatejo,station
+40.408046,-8.084317,Castelejo,halt
+39.818032,-7.49066,Castelo Branco,station
+40.064391,-7.460688,Castelo Novo,station
+37.196802,-7.483854,Castro Marim,halt
+41.262713,-8.617023,Castêlo Da Maia,station
+40.93956,-8.537486,Cavaco,halt
+39.714451,-8.545446,Caxarias,station
+38.698749,-9.274392,Caxias,station
+41.252861,-8.227167,Caíde,station
+40.665228,-7.382564,Celorico Da Beira,station
+39.602821,-9.073456,Centro,halt
+40.51158,-7.047398,Cerdeira,station
+39.275724,-7.807933,Chança,halt
+38.754825,-9.11387,Chelas,station
+39.654364,-8.493853,Chão De Maçãs - Fátima,station
+38.75152,-9.15904,Cidade Universitária,station
+40.224728,-8.440477,Coimbra-B,station
+41.12437,-8.634084,Coimbrões,halt
+38.584649,-9.051569,Coina,station
+38.753403,-9.189273,Colégio Militar/Luz,station
+41.165081,-8.598895,Combatentes,station
+37.144376,-7.605617,Conceição,halt
+41.168829,-8.574718,Contumil,station
+38.637121,-9.15099,Corroios,station
+40.940648,-8.630246,Cortegaça,halt
+41.48172,-8.528764,Couto De Cambeses,halt
+40.868136,-8.494134,Couto De Cucujães,halt
+38.6677,-9.164807,Cova Da Piedade,station
+41.421506,-8.300847,Covas,halt
+41.152371,-7.688072,Covelinhas,station
+40.277537,-7.496063,Covilhã,station
+39.269442,-7.63528,Crato,halt
+38.699796,-9.252204,Cruz Quebrada,halt
+38.163166,-7.894851,Cuba,station
+41.376474,-8.341908,Cuca,halt
+40.424547,-8.4561,Curia,halt
+39.547933,-8.429793,Curvaceiras,halt
+41.222307,-8.638997,Custió,station
+41.180651,-8.681253,Câmara De Matosinhos,station
+41.129662,-8.606172,Câmara Gaia,station
+41.200692,-8.649748,Cândido Dos Reis,station
+41.17151,-8.355427,Cête,station
+39.344501,-9.172402,Dagorda - Peniche,halt
+41.68023,-8.781954,Darque,station
+39.042558,-9.184618,Dois Portos,station
+41.119528,-8.606228,Dom João Ii,station
+40.13252,-7.47346,Donas,halt
+41.639066,-8.667017,Durrães,halt
+40.609442,-8.531701,Eirol,station
+40.63114,-8.568389,Eixo,station
+38.895542,-7.142277,Elvas,station
+38.74457,-9.148592,Entrecampos,station
+39.46165,-8.47375,Entroncamento,station
+41.217124,-8.554151,Ermesinde,station
+41.124275,-7.950901,Ermida,station
+38.002774,-8.413982,Ermidas-Sado,station
+40.919628,-8.516414,Escapães,halt
+40.641503,-8.61798,Esgueira,halt
+41.379458,-8.521563,Esmeriz,halt
+40.96277,-8.635499,Esmoriz,station
+39.050766,-8.902518,Espadanal Da Azambuja,halt
+40.209065,-8.470772,Espadaneira,halt
+41.006287,-8.644395,Espinho,halt
+41.002171,-8.643531,Espinho - Vouga,station
+41.909336,-8.792933,Esqueiro,halt
+40.751148,-8.575476,Estarreja,station
+41.696797,-8.830268,Estação,halt
+38.703251,-9.398725,Estoril,station
+41.160503,-8.582045,Estádio Do Dragão,station
+41.185742,-8.661223,Estádio Do Mar,station
+37.143445,-8.485495,Estômbar-Lagoa,station
+41.405565,-8.529425,Famalicão,station
+39.531634,-9.085714,Famalicão Da Nazaré,halt
+40.879232,-8.494915,Faria,halt
+41.157228,-8.609283,Faria Guimarães,station
+37.019258,-7.940441,Faro,station
+40.149294,-7.410384,Fatela - Penamacor,halt
+40.663978,-7.912813,Feira De São Mateus,halt
+39.022447,-9.179362,Feliteira,halt
+38.63643,-8.691538,Fernando Pó,halt
+41.144542,-7.331499,Ferradosa,halt
+37.138763,-8.519073,Ferragudo,halt
+41.530807,-8.441485,Ferreiros,halt
+41.161881,-7.611246,Ferrão,halt
+40.148485,-8.846896,Figueira Da Foz,station
+38.609888,-9.101523,Fogueteiro,station
+38.665531,-9.193993,Fomega,station
+40.141907,-8.813791,Fontela,station
+40.146326,-8.8249,Fontela-A,halt
+40.179476,-8.607076,Formoselha - Santo Varão,halt
+40.610313,-7.527038,Fornos De Algodres,station
+38.620629,-9.128843,Foros De Amora,halt
+41.081567,-8.647481,Francelos,halt
+41.165486,-8.636351,Francos,station
+39.614014,-7.715766,Fratel,station
+40.593216,-6.904456,Freineda,halt
+41.134691,-7.211171,Freixo De Numão - Mós Do Douro,halt
+37.727207,-8.337909,Funcheira,station
+40.141015,-7.496279,Fundão,station
+39.616507,-8.495005,Fungalvaz,halt
+37.060214,-7.75179,Fuseta,station
+37.05366,-7.749659,Fuseta-A,halt
+41.129759,-8.620282,Gaia,station
+40.521771,-7.21455,Gata,halt
+41.133188,-8.608679,General Torres,station
+41.36456,-8.388758,Giesteira,halt
+38.682497,-9.152278,Gil Vicente,station
+38.716149,-9.142699,Glória - Restauradores,halt
+38.714153,-9.14395,Glória - São Pedro De Alcântara,halt
+41.166235,-7.799117,Godim,station
+41.919994,-8.763146,Gondarém,halt
+40.573396,-7.602093,Gouveia,station
+41.038534,-8.647129,Granja,station
+40.164905,-8.63471,Granja Do Ulmeiro - Alfarelos,station
+38.181787,-8.554532,Grândola,station
+40.552455,-7.239847,Guarda,station
+39.948163,-8.801778,Guia,halt
+41.214713,-8.658646,Guifões,station
+41.435127,-8.294296,Guimarães,station
+41.14652,-8.593045,Heroísmo,station
+41.105823,-8.591148,Hospital Santos Silva,station
+41.183233,-8.602275,Hospital São João,station
+41.701762,-8.834158,Igreja,halt
+41.181213,-8.60456,Ipo,station
+41.181215,-8.342175,Irivo,station
+41.137615,-8.608707,Jardim Do Morro,station
+38.742088,-9.168913,Jardim Zoológico,station
+38.949774,-9.233402,Jerumelo,halt
+41.126095,-8.605661,João De Deus,station
+41.140672,-8.119419,Juncal,station
+37.108331,-8.671295,Lagos,station
+39.528825,-8.469032,Lamarosa,station
+40.98377,-8.605286,Lapa,halt
+40.474228,-7.922156,Lapa Do Lobo,halt
+38.74825,-9.173036,Laranjeiras,station
+38.655839,-9.154379,Laranjeiro,station
+39.988665,-7.440832,Lardosa,station
+40.129548,-8.78751,Lares,halt
+38.717836,-9.141815,Lavra - Largo Da Anunciada,halt
+38.71864,-9.140161,Lavra - Rua Câmara Pestana,halt
+38.661825,-9.058312,Lavradio,station
+41.243832,-8.556776,Leandro,station
+39.756662,-8.827963,Leiria,station
+41.208411,-8.629535,Leça Do Balio,station
+38.714591,-9.141841,Lisboa - Rossio,station
+38.71463,-9.122042,Lisboa - Santa Apolónia,station
+38.767821,-9.099073,Lisboa Oriente,station
+39.837942,-8.593388,Litém,halt
+37.073748,-7.731283,Livramento,halt
+41.216847,-8.155676,Livração,station
+41.365601,-8.363488,Lordelo,station
+37.10426,-8.058271,Loulé,station
+40.016256,-8.815497,Louriçal,station
+41.436927,-8.538213,Louro,halt
+41.350946,-8.526487,Lousado,station
+38.772928,-9.159255,Lumiar,station
+40.390214,-8.385015,Luso - Buçaco,halt
+37.088894,-7.699996,Luz,halt
+40.653435,-8.458336,Macinhata,station
+41.111487,-8.637766,Madalena,halt
+38.897435,-9.291355,Mafra,station
+38.928588,-9.258008,Malveira,station
+41.253551,-8.628371,Mandim,station
+40.586636,-7.760202,Mangualde,station
+41.110637,-8.600035,Manuel Leão,station
+41.180972,-8.136801,Marco De Canaveses,station
+39.736404,-8.92684,Marinha Grande,station
+41.161171,-8.604297,Marquês,station
+39.687191,-8.945908,Martingança,station
+40.140377,-8.67629,Marujal,halt
+38.739031,-9.108757,Marvila,halt
+39.368496,-8.554325,Mato Miranda,station
+41.180122,-8.68859,Matosinhos Sul,station
+41.526895,-8.458376,Mazagão,halt
+40.388765,-7.28728,Maçainhas,halt
+40.375417,-8.45385,Mealhada,halt
+37.118582,-8.647467,Meia Praia,halt
+41.248918,-8.258111,Meinedo,halt
+41.187476,-8.693392,Mercado,station
+37.255443,-8.290774,Messines - Alte,station
+37.15416,-8.609664,Mexilhoeira Grande,station
+41.508211,-8.581904,Midões,station
+38.789574,-9.312642,Mira Sintra-Meleças,station
+38.716426,-9.131552,Miradouro Da Graça,halt
+41.067165,-8.649861,Miramar,halt
+41.117587,-7.972524,Mirão,station
+40.519346,-7.013308,Miuzela,halt
+40.450464,-8.459392,Mogofores,station
+40.574649,-7.809571,Moimenta-Alcafache,halt
+38.644648,-8.995788,Moita,station
+41.847915,-8.864334,Moledo Do Minho,halt
+38.664539,-9.2003,Monte Da Caparica,station
+40.982262,-8.625516,Monte De Paramos,halt
+40.408115,-8.264408,Monte Dos Lobos,halt
+38.703601,-9.406441,Monte Estoril,halt
+37.190041,-7.448328,Monte Gordo,halt
+39.85599,-8.847774,Monte Real,station
+39.900328,-8.834416,Monte Redondo,halt
+40.160074,-8.654094,Montemor,halt
+40.390856,-8.241246,Mortágua,station
+38.777654,-9.099487,Moscavide,halt
+41.094619,-8.069196,Mosteirô,station
+41.428973,-8.522083,Mouquim,halt
+40.605294,-8.460076,Mourisca Do Vouga,halt
+39.46785,-8.08505,Mouriscas-A,station
+41.173685,-8.573822,Nau Vitória,station
+40.530183,-7.84991,Nelas,station
+41.403195,-8.319566,Nespereira,halt
+41.454737,-8.544285,Nine,station
+41.182413,-8.65218,Norteshopping / Sete Bicas,station
+38.793269,-9.172982,Odivelas,station
+38.688479,-9.318917,Oeiras,station
+40.543549,-8.549914,Oiã,station
+38.739465,-9.123946,Olaias,station
+41.192926,-8.337694,Oleiros,halt
+37.030361,-7.839967,Olhão,station
+41.257334,-8.198969,Oliveira,halt
+40.840175,-8.48177,Oliveira De Azeméis,station
+40.510159,-8.498744,Oliveira Do Bairro,station
+40.450375,-7.96334,Oliveirinha-Cabanas,station
+40.572159,-8.476738,Oronhe,halt
+39.191231,-9.177168,Outeiro,station
+40.864042,-8.616675,Ovar,station
+39.579598,-8.473758,Paialvo,halt
+41.103567,-8.090874,Pala,station
+38.571578,-8.872754,Palmela-A,halt
+41.202262,-8.556902,Palmilheira,halt
+40.338566,-8.431617,Pampilhosa,station
+40.418965,-8.046021,Papízios,halt
+41.160095,-8.372971,Parada,halt
+40.481204,-8.480145,Paraimo,halt
+40.975694,-8.636906,Paramos,halt
+38.689741,-9.356402,Parede,halt
+41.204364,-8.323532,Paredes,halt
+38.664363,-9.16001,Parque Da Paz,station
+37.080256,-7.984906,Parque Das Cidades,station
+41.179072,-8.673571,Parque De Real,station
+41.22913,-8.626583,Parque Maia,station
+39.655535,-8.984922,Pataias,station
+38.697106,-9.290535,Paço De Arcos,halt
+40.972053,-8.583955,Paços De Brandão,station
+39.294266,-9.162674,Paúl,halt
+38.870558,-9.29547,Pedra Furada,halt
+37.091422,-7.673138,Pedras D'El Rei,halt
+41.180339,-8.666245,Pedro Hispano,station
+38.662233,-8.619402,Pegões,station
+39.967774,-8.633263,Pelariga,halt
+41.217656,-8.294944,Penafiel,station
+38.590055,-8.99524,Penalva,station
+38.638162,-8.956258,Penteado,halt
+40.18636,-8.584953,Pereira,halt
+37.436416,-8.44675,Pereiras,station
+41.3774,-8.324102,Pereirinhas,halt
+38.988672,-9.1974,Pero Negro,station
+41.208208,-8.647154,Pias,station
+38.630116,-8.912832,Pinhal Novo,station
+41.190395,-7.545135,Pinhão,station
+38.634394,-8.743367,Poceirão,station
+41.13029,-7.123487,Pocinho,station
+39.916492,-8.630157,Pombal,station
+39.265494,-8.013039,Ponte De Sor,station
+37.133091,-7.648206,Porta Nova,halt
+39.198918,-7.46112,Portalegre,station
+41.300857,-8.548745,Portela,halt
+38.802246,-9.376373,Portela De Sintra,halt
+37.144649,-8.537489,Portimão,station
+41.149192,-8.58471,Porto - Campanhã,station
+41.145491,-8.609515,Porto - São Bento,station
+41.121844,-7.910634,Porto De Rei,halt
+37.163631,-8.388812,Poço Barreto,halt
+38.666227,-9.179982,Pragal,station
+37.086945,-7.66305,Praia Do Barril,halt
+39.467224,-8.347567,Praia Do Ribatejo,station
+38.517928,-8.837909,Praias Do Sado-A,halt
+38.737684,-9.159247,Praça De Espanha,station
+38.524932,-8.886522,Praça Do Quebedo,halt
+41.174602,-8.603657,Pólo Universitário,station
+38.859289,-9.064198,Póvoa,halt
+40.356749,-8.412073,Quinta Do Valongo - Vacariça,halt
+40.591037,-8.61269,Quintans,halt
+41.172974,-8.641848,Ramalde,station
+38.668959,-9.170155,Ramalha,station
+39.139518,-9.215977,Ramalhal,station
+38.720103,-9.154839,Rato,station
+38.750959,-9.222956,Reboleira,halt
+41.153819,-8.3992,Recarei-Sobreira,station
+41.231565,-8.175231,Recesinhos,halt
+41.160744,-7.866535,Rede,station
+39.099514,-8.793532,Reguengo - Vale Da Pedra - Pontével,halt
+39.769624,-7.591215,Retaxo,halt
+40.130683,-8.745354,Reveles,halt
+39.432196,-8.504549,Riachos - Torres Novas - Golegã,station
+41.140958,-8.609503,Ribeira,halt
+40.960961,-8.571209,Rio Meão,halt
+41.184539,-8.557154,Rio Tinto,halt
+40.507009,-7.090714,Rochoso,halt
+38.745686,-9.135507,Roma-Areeiro,station
+38.716627,-9.132357,Rua Dos Lagares,halt
+41.497637,-8.496284,Ruilhe,station
+39.07297,-9.209854,Runa,halt
+41.158567,-7.783632,Régua,station
+39.655125,-7.67283,Ródão,station
+40.511559,-7.238902,Sabugal,halt
+38.830557,-9.300013,Sabugo,station
+38.79497,-9.099799,Sacavém,halt
+41.169298,-8.598662,Salgueiros,station
+39.492421,-9.147284,Salir Do Porto,halt
+40.728861,-8.564873,Salreu,halt
+40.98406,-8.593315,Sampaio - Oleiros,halt
+40.926667,-8.530958,Sanfins,halt
+38.71369,-9.122454,Santa Apolónia,station
+39.552748,-8.393434,Santa Cita,station
+37.4958,-8.481383,Santa Clara - Sabóia,station
+40.390501,-8.124393,Santa Comba Dão,station
+39.006055,-7.253388,Santa Eulália-A,halt
+38.841038,-9.080111,Santa Iria,halt
+39.447545,-8.296466,Santa Margarida,station
+39.144162,-8.7589,Santana-Cartaxo,halt
+39.242123,-8.675086,Santarém,station
+40.851316,-8.489591,Santiago De Riba-Ul,halt
+38.648528,-9.153127,Santo Amaro,station
+41.115502,-8.606615,Santo Ovídio,station
+41.35107,-8.47341,Santo Tirso,station
+41.554905,-8.377938,Santuário,halt
+38.968916,-9.199322,Sapataria,halt
+39.756386,-7.62378,Sarnadas,station
+41.89651,-8.81924,Seixas,halt
+39.67844,-8.507983,Seiça - Ourém,halt
+41.188188,-8.685203,Senhor De Matosinhos,station
+41.869478,-8.843515,Senhora Da Agonia,halt
+41.188079,-8.654493,Senhora Da Hora,station
+41.646643,-8.72098,Senhora Das Neves,halt
+40.672163,-8.452722,Sernada Do Vouga,station
+38.74024,-9.166666,Sete Rios,station
+39.113589,-8.777857,Setil,station
+38.531203,-8.884547,Setúbal,station
+41.566038,-8.627781,Silva,halt
+40.990344,-8.640736,Silvalde,halt
+40.988821,-8.630346,Silvalde - Vouga,halt
+37.175666,-8.440465,Silves,station
+40.010899,-8.633538,Simões,halt
+38.799261,-9.385358,Sintra,station
+40.02687,-7.455346,Soalheira,halt
+40.414806,-8.301425,Soito,halt
+39.542867,-8.471628,Soudos - Vila Nova,halt
+40.055016,-8.639486,Soure,station
+40.286239,-8.425646,Souselas,station
+41.197115,-8.502002,Suzão,halt
+41.144788,-8.610816,São Bento,station
+41.258406,-8.55816,São Frutuoso,station
+41.197143,-8.579213,São Gemil,station
+38.679488,-9.157616,São João Baptista,station
+40.898596,-8.495217,São João Da Madeira,station
+38.668091,-8.585637,São João Das Craveiras,halt
+40.622208,-8.548047,São João De Loure,halt
+40.955494,-8.551163,São João De Ver,halt
+38.701059,-9.385468,São João Do Estoril,halt
+39.322024,-9.179447,São Mamede,halt
+41.190314,-8.613309,São Mamede De Infesta,station
+41.169768,-8.467777,São Martinho Do Campo,halt
+39.50801,-9.133175,São Martinho Do Porto,station
+41.993614,-8.666368,São Pedro Da Torre,station
+38.695372,-9.371697,São Pedro Do Estoril,station
+41.277958,-8.553594,São Romão,station
+40.660465,-7.911906,Sé,halt
+39.605246,-9.074473,Sítio,halt
+41.509182,-8.482985,Tadim,station
+40.601116,-8.524365,Taipa-Requeixo,halt
+41.60879,-8.634796,Tamel,station
+39.461272,-8.39533,Tancos,halt
+40.205922,-8.500278,Taveiro,station
+37.120987,-7.655705,Tavira,station
+41.554686,-8.38081,Tenões,halt
+41.163766,-8.437935,Terronhas,halt
+39.716742,-7.681725,Tojeirinha,halt
+39.598481,-8.41281,Tomar,station
+39.309673,-7.908492,Torre Das Vargens,station
+39.092709,-9.254309,Torres Vedras,station
+40.238872,-7.512393,Tortosendo,station
+39.460434,-8.248027,Tramagal,station
+41.161262,-8.418939,Trancoso,halt
+41.229059,-8.551747,Travagem,halt
+40.594206,-8.51447,Travassô,halt
+41.152517,-8.609353,Trindade,station
+41.337372,-8.547646,Trofa,halt
+41.207356,-7.420125,Tua,station
+37.164888,-8.256383,Tunes,station
+38.663622,-9.207174,Universidade,station
+41.099018,-8.632061,Valadares,halt
+39.584446,-9.017629,Valado,station
+39.313733,-8.629977,Vale De Figueira,station
+40.114742,-7.424235,Vale De Prazeres,station
+39.188406,-8.723841,Vale De Santarém,halt
+42.024704,-8.639295,Valença,station
+41.188246,-8.487274,Valongo,station
+40.624202,-8.449918,Valongo - Vouga,halt
+41.143133,-7.316042,Vargelas,station
+41.190304,-8.661028,Vasco Da Gama,station
+38.606238,-8.888619,Venda Do Alcaide,halt
+38.67955,-8.454561,Vendas Novas,station
+39.850875,-8.652284,Vermoil,station
+40.139659,-8.703462,Verride,station
+41.141222,-7.26203,Vesúvio,halt
+41.695208,-8.831558,Viana Do Castelo,station
+41.098599,-8.588507,Vila D'Este,station
+40.924274,-8.535391,Vila Da Feira,station
+41.357442,-8.406244,Vila Das Aves,station
+40.497817,-7.147993,Vila Fernando,halt
+40.724774,-7.258152,Vila Franca Das Naves,station
+38.955299,-8.986229,Vila Franca De Xira,halt
+41.246095,-8.184833,Vila Meã,station
+38.293793,-8.035064,Vila Nova Da Baronia,station
+39.036465,-8.928033,Vila Nova Da Rainha,halt
+40.107755,-8.637885,Vila Nova De Anços,halt
+41.935973,-8.748322,Vila Nova De Cerveira,station
+40.192951,-8.525001,Vila Pouca Do Campo,halt
+37.199713,-7.42146,Vila Real De Santo António,station
+40.606099,-6.829244,Vilar Formoso,station
+40.263243,-8.441358,Vilela - Fornos,halt
+39.086584,-8.827872,Virtudes,halt
+41.177236,-8.646534,Viso,station
+41.379087,-8.312367,Vizela,station
+40.834197,-8.601501,Válega,station
+39.006366,-9.183199,Zibreira,halt
+41.200717,-8.556503,Águas Santas,halt
+40.577519,-8.448275,Águeda,station
+41.813061,-8.862478,Âncora-Praia,halt
+38.56041,-7.907106,Évora,station
+39.364895,-9.159024,Óbidos,halt

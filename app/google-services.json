@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "888527368394",
+    "project_id": "guiaestacoes-121e2",
+    "storage_bucket": "guiaestacoes-121e2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:888527368394:android:1d58347635a2e07e3ac433",
+        "android_client_info": {
+          "package_name": "com.diogo.guiaestacoes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPf4PNoq3vKnmWZALwIg1s3MyxFc6JmSw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
