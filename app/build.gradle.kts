@@ -50,10 +50,16 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
 
-    // Internet e CSV
+    // Internet, CSV e JSON
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.apache.commons:commons-csv:1.10.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Coroutines
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    // --- DEPENDÊNCIAS DE TESTE (Adicionadas para corrigir o erro) ---
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }

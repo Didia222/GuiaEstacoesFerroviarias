@@ -7,14 +7,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+//Define o comportamento da lista de comboios na intergace
 class ComboioAdapter(
     private var lista: List<Any>,
     private var estacaoSelecionada: String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
+// constantes para distinguir os tipos de elementos na lista
     private val TYPE_HEADER = 0
     private val TYPE_ITEM = 1
-
+// Identifica se o dado na posição x é um titulo de categoria ou um comboio
     override fun getItemViewType(position: Int): Int = if (lista[position] is String) TYPE_HEADER else TYPE_ITEM
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

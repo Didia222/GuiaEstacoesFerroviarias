@@ -27,8 +27,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Nº do Comboio (ex: 15401)"
-            android:inputType="number"
+            android:hint="Nº ou Destino (ex: Porto)"
+            android:inputType="textCapWords"
             android:padding="12dp"
             android:textColor="#000000"
             android:minHeight="48dp" />

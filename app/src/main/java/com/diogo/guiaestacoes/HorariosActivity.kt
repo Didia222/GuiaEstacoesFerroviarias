@@ -43,25 +43,35 @@ class HorariosActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // CORREÇÃO 1: Inicializa o adaptador com a lista vazia e o nome da estação
+        // Inicializa o adaptador com a lista vazia e o nome da estação
         adapter = ComboioAdapter(emptyList(), nomeEstacaoGlobal)
         recyclerView.adapter = adapter
 
         if (nomeEstacaoGlobal.isNotEmpty()) {
-            etNumeroComboio.hint = "Horários para: $nomeEstacaoGlobal"
+            etNumeroComboio.hint = "Procurar em: $nomeEstacaoGlobal"
             pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
         }
 
         btnPesquisar.setOnClickListener {
-            val numero = etNumeroComboio.text.toString().trim()
-            if (numero.isNotEmpty()) {
-                pesquisarComboioPorNumero(numero)
+            val textoPesquisa = etNumeroComboio.text.toString().trim()
+            if (textoPesquisa.isNotEmpty()) {
+                // Nova função de pesquisa inteligente
+                executarPesquisaSmarter(textoPesquisa)
             } else {
-                Toast.makeText(this, "Escreve um número primeiro!", Toast.LENGTH_SHORT).show()
+                // Se estiver vazio, volta a mostrar todos os comboios da estação
+                pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
             }
         }
     }
 
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressedDispatcher.onBackPressed()
+        return true
+    }
+
+    /**
+     * Procura todos os comboios que param na estação selecionada.
+     */
     private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
         db.collection("comboios")
             .get()
@@ -70,6 +80,7 @@ class HorariosActivity : AppCompatActivity() {
 
                 for (document in documents) {
                     val comboio = document.toObject(Comboio::class.java)
+                    // Verifica se o comboio passa nesta estação
                     val passaNestaEstacao = comboio.paragens.any { paragem ->
                         paragem.estacao.contains(nomeEstacao, ignoreCase = true)
                     }
@@ -79,27 +90,9 @@ class HorariosActivity : AppCompatActivity() {
                 }
 
                 if (listaOriginal.isNotEmpty()) {
-                    // CORREÇÃO 2: Lógica de Agrupamento por Tipo e Ordenação por Hora Local
-                    val listaMista = mutableListOf<Any>()
-
-                    // Agrupamos os comboios pelo campo "tipo" (Ex: Urbano, Regional)
-                    val grupos = listaOriginal.groupBy { it.tipo }
-
-                    grupos.forEach { (tipo, comboios) ->
-                        // Adicionamos o nome do tipo como um cabeçalho (String)
-                        listaMista.add(tipo ?: "Outros")
-
-                        // Ordenamos os comboios pela hora específica em que passam nesta estação
-                        val ordenados = comboios.sortedBy { c ->
-                            c.paragens.find { it.estacao.contains(nomeEstacao, true) }?.hora
-                        }
-                        listaMista.addAll(ordenados)
-                    }
-
-                    // CORREÇÃO 3: Atualiza o adaptador com a nova lista mista e estação
-                    adapter.atualizarLista(listaMista, nomeEstacao)
+                    processarEExibirLista(listaOriginal)
                 } else {
-                    Toast.makeText(this, "Ainda não há comboios para $nomeEstacao", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Sem comboios para $nomeEstacao", Toast.LENGTH_LONG).show()
                     adapter.atualizarLista(emptyList(), nomeEstacao)
                 }
             }
@@ -108,20 +101,68 @@ class HorariosActivity : AppCompatActivity() {
             }
     }
 
-    private fun pesquisarComboioPorNumero(numeroInserido: String) {
-        db.collection("comboios").document(numeroInserido).get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
+    /**
+     * Pesquisa avançada que filtra por Número ou paragens FUTURAS,
+     * garantindo que o comboio serve para o destino pretendido a partir de onde o utilizador está.
+     */
+    private fun executarPesquisaSmarter(texto: String) {
+        db.collection("comboios")
+            .get()
+            .addOnSuccessListener { documents ->
+                val resultados = mutableListOf<Comboio>()
+
+                for (document in documents) {
                     val comboio = document.toObject(Comboio::class.java)
-                    if (comboio != null) {
-                        // Passamos o tipo como título e depois o objeto do comboio
-                        val listaSimples = listOf(comboio.tipo ?: "Comboio", comboio)
-                        adapter.atualizarLista(listaSimples, nomeEstacaoGlobal)
+
+                    // 1. Encontrar a posição da estação atual na rota do comboio
+                    val indexAtual = comboio.paragens.indexOfFirst {
+                        it.estacao.contains(nomeEstacaoGlobal, ignoreCase = true)
                     }
+
+                    // Se o comboio passa na estação selecionada...
+                    if (indexAtual != -1) {
+                        // 2. Verifica se o texto coincide com o Número
+                        val matchesNumero = comboio.numero.contains(texto)
+
+                        // 3. Verifica se o texto coincide com o Destino Final
+                        val matchesDestinoFinal = comboio.destino.contains(texto, ignoreCase = true)
+
+                        // 4. A LÓGICA DE DESTINO INTERMÉDIO: Verifica paragens APÓS a estação atual
+                        val paragensFuturas = comboio.paragens.subList(indexAtual + 1, comboio.paragens.size)
+                        val matchesParagemFutura = paragensFuturas.any {
+                            it.estacao.contains(texto, ignoreCase = true)
+                        }
+
+                        if (matchesNumero || matchesDestinoFinal || matchesParagemFutura) {
+                            resultados.add(comboio)
+                        }
+                    }
+                }
+
+                if (resultados.isNotEmpty()) {
+                    processarEExibirLista(resultados)
                 } else {
-                    Toast.makeText(this, "Comboio não encontrado", Toast.LENGTH_SHORT).show()
-                    adapter.atualizarLista(emptyList(), nomeEstacaoGlobal)
+                    Toast.makeText(this, "Nenhum comboio para '$texto' nesta linha", Toast.LENGTH_SHORT).show()
                 }
             }
+    }
+
+    /**
+     * Agrupa os comboios por tipo e ordena-os pela hora local.
+     */
+    private fun processarEExibirLista(listaComboios: List<Comboio>) {
+        val listaMista = mutableListOf<Any>()
+        val grupos = listaComboios.groupBy { it.tipo }
+
+        grupos.forEach { (tipo, comboios) ->
+            listaMista.add(tipo ?: "Outros")
+
+            // Ordenação cronológica baseada na hora da paragem na estação local
+            val ordenados = comboios.sortedBy { c ->
+                c.paragens.find { it.estacao.contains(nomeEstacaoGlobal, true) }?.hora
+            }
+            listaMista.addAll(ordenados)
+        }
+        adapter.atualizarLista(listaMista, nomeEstacaoGlobal)
     }
 }

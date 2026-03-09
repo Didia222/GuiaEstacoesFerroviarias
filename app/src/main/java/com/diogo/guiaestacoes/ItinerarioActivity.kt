@@ -34,4 +34,9 @@ class ItinerarioActivity : AppCompatActivity() {
             rv.adapter = ItinerarioAdapter(paragensFiltradas)
         }
     }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressedDispatcher.onBackPressed()
+        return true
+    }
 }
