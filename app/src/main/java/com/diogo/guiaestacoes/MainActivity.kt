@@ -3,7 +3,9 @@ package com.diogo.guiaestacoes
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.MatrixCursor
 import android.os.Bundle
+import android.provider.BaseColumns
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -12,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.cursoradapter.widget.CursorAdapter
+import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -28,30 +32,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import android.database.MatrixCursor
-import android.provider.BaseColumns
-import androidx.cursoradapter.widget.SimpleCursorAdapter
 
-
-//
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
-
-    private lateinit var sugestoesAdapter: androidx.cursoradapter.widget.SimpleCursorAdapter
+    private lateinit var sugestoesAdapter: SimpleCursorAdapter
     private var todosOsNomesEstacoes: List<String> = emptyList()
 
-    //OnMapReadyCallback: Prepara o terrono para o google maps, quando o mapa está pronto, o gerente define o ponto de vista inicial (Portugal) e coloca os marcadores nas posições corretas.
+    // OnMapReadyCallback: Prepara o terreno para o google maps.
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
-    // --- NOVIDADE: Lista para guardar os marcadores físicos do mapa ---
+    // Lista para guardar os marcadores físicos do mapa
     private val listaMarcadores = mutableListOf<Marker>()
 
+    // LINK CORRIGIDO: Sempre a apontar para a versão mais recente
     private val URL_DADOS =
-        "https://gist.githubusercontent.com/Didia222/ce7ecbc46a6eebcb912d47c0741eb02f/raw/d74e02f3a639db9fa250fb73a249dc99b517743d/estacoes.csv"
-
-
+        "https://gist.githubusercontent.com/Didia222/ce7ecbc46a6eebcb912d47c0741eb02f/raw/4e57360edd8778ff45dc9c6164ac903a5f4b1626/estacoes.csv"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,14 +64,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
         val from = arrayOf("estacaoNome")
         val to = intArrayOf(android.R.id.text1)
-        sugestoesAdapter = androidx.cursoradapter.widget.SimpleCursorAdapter(
+        sugestoesAdapter = SimpleCursorAdapter(
             this,
             android.R.layout.simple_list_item_1,
             null,
             from,
             to,
-            androidx.cursoradapter.widget.CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
-
+            CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
         )
 
         searchView.suggestionsAdapter = sugestoesAdapter
@@ -86,10 +82,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 val nomeSelecionado = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
                 searchView.setQuery(nomeSelecionado, true)
                 return true
-
             }
-
-
         })
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -101,9 +94,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             override fun onQueryTextChange(newText: String?): Boolean {
                 filtrarSugestoes(newText)
                 return true
-
             }
-
         })
     }
 
@@ -116,10 +107,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         ativarLocalizacaoUsuario()
         carregarDados()
-        // Função com tres formas de fazer a mesma coisa:
-        //Nível 1 (Mercado Online): Tenta descarregar o ficheiro CSV mais recente da Internet (GitHub Gist) usando o OkHttpClient. Se conseguir, renova a base de dados.
-        //Nível 2 (Despensa): Se não houver internet, vai buscar o que guardou anteriormente na base de dados Room.
-        //Nível 3 (Caixa de Emergência): Se for a primeira vez que a app abre e não houver rede, usa o ficheiro estacoes.csv que está guardado nos Assets.
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
@@ -152,13 +139,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun carregarDados() {
         lifecycleScope.launch(Dispatchers.IO) {
-            //O gerente não faz o trabalho pesado sozinho para não "congelar"(bloquear o ecrã). Ele contrata trabalhadores para carregar os dados em segundo plano.
-            //withContext(Dispatchers.Main): Quando os dados chegam, o gerente volta à linha da frente para desenhar os marcadores no mapa, pois só ele pode mexer na interface visual.
-
             val dao = AppDatabase.getDatabase(applicationContext).estacaoDao()
             var listaFinal: List<Estacao> = emptyList()
 
             try {
+                // 1. TENTA A INTERNET: Vai ao teu Gist no GitHub descarregar as estações
                 val client = OkHttpClient()
                 val request = Request.Builder().url(URL_DADOS).build()
                 client.newCall(request).execute().use { response ->
@@ -166,6 +151,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                         response.body?.byteStream()?.let { stream ->
                             val listaOnline = CsvHelper.carregarDeStream(stream)
                             if (listaOnline.isNotEmpty()) {
+                                // Atualiza a base de dados do telemóvel
                                 dao.limparTudo()
                                 dao.inserirTodas(listaOnline)
                                 listaFinal = listaOnline
@@ -174,14 +160,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     }
                 }
             } catch (e: Exception) {
-                Log.e("MainActivity", "Erro: ${e.message}")
+                Log.e("MainActivity", "Erro ou sem internet: ${e.message}")
             }
 
-            if (listaFinal.isEmpty()) listaFinal = dao.obterTodas()
+            // 2. OFFLINE: Se falhou a internet, vai buscar à base de dados Room
             if (listaFinal.isEmpty()) {
-                listaFinal = CsvHelper.carregarEstacoesDoCsv(applicationContext)
-                if (listaFinal.isNotEmpty()) dao.inserirTodas(listaFinal)
+                listaFinal = dao.obterTodas()
             }
+
+            // 3. (Removido o uso do ficheiro estacoes.csv local)
 
             withContext(Dispatchers.Main) {
                 atualizarListaDeNomesParaSugestoes(listaFinal)
@@ -199,25 +186,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                         // Guarda o marcador na nossa lista para podermos pesquisá-lo depois
                         if (marker != null) listaMarcadores.add(marker)
                     }
+                } else {
+                    Toast.makeText(this@MainActivity, "Liga a internet para transferir o mapa pela primeira vez!", Toast.LENGTH_LONG).show()
                 }
             }
         }
     }
 
-    // --- PESQUISA ATUALIZADA: Move o mapa E abre o marcador automaticamente ---
+    // PESQUISA ATUALIZADA: Move o mapa E abre o marcador automaticamente
     private fun procurarEstacaoNoMapa(nome: String) {
-        // Procura na nossa lista de marcadores físicos
         val marcadorEncontrado = listaMarcadores.find {
             it.title?.contains(nome, ignoreCase = true) == true
         }
 
         if (marcadorEncontrado != null) {
-            // 1. Zoom na estação
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(marcadorEncontrado.position, 15f))
-
-            // 2. ABRE O BALÃO (InfoWindow) AUTOMATICAMENTE!
             marcadorEncontrado.showInfoWindow()
-
         } else {
             Toast.makeText(this, "Estação '$nome' não encontrada.", Toast.LENGTH_SHORT).show()
         }
@@ -257,8 +241,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun filtrarSugestoes(query: String?) {
-        val cursor =
-            android.database.MatrixCursor(arrayOf(android.provider.BaseColumns._ID, "estacaoNome"))
+        val cursor = MatrixCursor(arrayOf(BaseColumns._ID, "estacaoNome"))
 
         if (!query.isNullOrBlank()) {
             val sugestoes = todosOsNomesEstacoes.filter {
@@ -271,12 +254,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         sugestoesAdapter.changeCursor(cursor)
     }
 
-
     private fun atualizarListaDeNomesParaSugestoes(lista: List<Estacao>) {
         todosOsNomesEstacoes = lista.map { it.nome }
     }
 }
-
-
-
-

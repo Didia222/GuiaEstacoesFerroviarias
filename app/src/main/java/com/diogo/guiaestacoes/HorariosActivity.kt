@@ -1,14 +1,16 @@
 package com.diogo.guiaestacoes
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.Normalizer // Importante para remover acentos
 
 class HorariosActivity : AppCompatActivity() {
 
@@ -17,7 +19,6 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var adapter: ComboioAdapter
     private lateinit var etNumeroComboio: EditText
     private lateinit var btnPesquisar: Button
-
     private var nomeEstacaoGlobal: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,14 +27,17 @@ class HorariosActivity : AppCompatActivity() {
 
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarHorarios)
         setSupportActionBar(toolbar)
-
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
+
+        // Ajuste para a câmara (notch) não tapar a barra
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->
+            val statusBar = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            view.setPadding(0, statusBar.top, 0, 0)
+            insets
         }
 
         nomeEstacaoGlobal = intent.getStringExtra("ESTACAO_NOME") ?: ""
-        supportActionBar?.title = if (nomeEstacaoGlobal.isNotEmpty()) "Horários: $nomeEstacaoGlobal" else "Horários de Comboios"
+        supportActionBar?.title = "Horários: $nomeEstacaoGlobal"
 
         recyclerView = findViewById(R.id.recyclerViewHorarios)
         etNumeroComboio = findViewById(R.id.etNumeroComboio)
@@ -44,95 +48,82 @@ class HorariosActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         if (nomeEstacaoGlobal.isNotEmpty()) {
-            etNumeroComboio.hint = "Procurar em: $nomeEstacaoGlobal"
             pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
-        } else {
-            Toast.makeText(this, "Nome da estação não recebido", Toast.LENGTH_SHORT).show()
         }
 
         btnPesquisar.setOnClickListener {
-            val textoPesquisa = etNumeroComboio.text.toString().trim()
-            if (textoPesquisa.isNotEmpty()) {
-                executarPesquisaSmarter(textoPesquisa)
-            } else {
-                pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
-            }
+            val texto = etNumeroComboio.text.toString().trim()
+            if (texto.isNotEmpty()) pesquisarSmarter(texto)
+            else pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
         }
+    }
+
+    // Função Mágica que tira os acentos (ex: "Santarém" vira "Santarem")
+    private fun removerAcentos(str: String): String {
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
+            .replace("\\p{M}".toRegex(), "")
     }
 
     private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
+        val estacaoProcuradaLimpa = removerAcentos(nomeEstacao)
+
         db.collection("comboios").get().addOnSuccessListener { documents ->
-            val listaOriginal = mutableListOf<Comboio>()
+            val lista = mutableListOf<Comboio>()
             for (document in documents) {
-                try {
-                    val comboio = document.toObject(Comboio::class.java)
-                    val passaNestaEstacao = comboio.paragens.any {
-                        it.estacao.contains(nomeEstacao, ignoreCase = true)
-                    }
-                    if (passaNestaEstacao) {
-                        listaOriginal.add(comboio)
-                    }
-                } catch (e: Exception) {
-                    Log.e("FIREBASE", "Erro ao converter comboio: ${e.message}")
+                val comboio = document.toObject(Comboio::class.java)
+
+                // Verifica se a estação (sem acentos) existe na lista do Firebase (sem acentos)
+                val passaNestaEstacao = comboio.paragens.any { paragem ->
+                    removerAcentos(paragem.estacao).contains(estacaoProcuradaLimpa, ignoreCase = true)
+                }
+
+                if (passaNestaEstacao) {
+                    lista.add(comboio)
                 }
             }
-
-            if (listaOriginal.isNotEmpty()) {
-                processarEExibirLista(listaOriginal)
-            } else {
-                Toast.makeText(this, "Nenhum comboio encontrado para esta estação", Toast.LENGTH_LONG).show()
-                // Limpa a lista se não houver resultados
-                adapter.atualizarLista(emptyList(), nomeEstacaoGlobal)
-            }
-        }.addOnFailureListener { exception ->
-            Log.e("FIREBASE", "Erro ao ler do Firestore", exception)
-            Toast.makeText(this, "Erro de rede: ${exception.message}", Toast.LENGTH_LONG).show()
+            if (lista.isEmpty()) Toast.makeText(this, "Sem comboios para esta estação", Toast.LENGTH_SHORT).show()
+            exibirResultados(lista)
+        }.addOnFailureListener {
+            Toast.makeText(this, "Erro ao ligar ao Firebase: ${it.message}", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun executarPesquisaSmarter(texto: String) {
+    private fun pesquisarSmarter(texto: String) {
+        val textoLimpo = removerAcentos(texto)
+
         db.collection("comboios").get().addOnSuccessListener { documents ->
             val resultados = mutableListOf<Comboio>()
             for (document in documents) {
                 val comboio = document.toObject(Comboio::class.java)
-                val indexAtual = comboio.paragens.indexOfFirst {
-                    it.estacao.contains(nomeEstacaoGlobal, ignoreCase = true)
-                }
 
-                if (indexAtual != -1) {
-                    val matchesNumero = comboio.numero.contains(texto)
-                    val matchesDestinoFinal = comboio.destino.contains(texto, ignoreCase = true)
-                    
-                    val paragensFuturas = comboio.paragens.subList(indexAtual + 1, comboio.paragens.size)
-                    val matchesParagemFutura = paragensFuturas.any {
-                        it.estacao.contains(texto, ignoreCase = true)
-                    }
+                val matchNumero = comboio.numero.contains(textoLimpo, true)
+                val matchDestino = removerAcentos(comboio.destino).contains(textoLimpo, true)
+                val matchParagem = comboio.paragens.any { removerAcentos(it.estacao).contains(textoLimpo, true) }
 
-                    if (matchesNumero || matchesDestinoFinal || matchesParagemFutura) {
-                        resultados.add(comboio)
-                    }
+                if (matchNumero || matchDestino || matchParagem) {
+                    resultados.add(comboio)
                 }
             }
-
-            if (resultados.isNotEmpty()) {
-                processarEExibirLista(resultados)
-            } else {
-                Toast.makeText(this, "Nenhum resultado para '$texto'", Toast.LENGTH_SHORT).show()
-            }
+            exibirResultados(resultados)
         }
     }
 
-    private fun processarEExibirLista(listaComboios: List<Comboio>) {
-        val listaMista = mutableListOf<Any>()
-        val grupos = listaComboios.groupBy { it.tipo }
+    private fun exibirResultados(lista: List<Comboio>) {
+        val listaExibicao = mutableListOf<Any>()
+        val grupos = lista.groupBy { it.tipo }
+        val estacaoGlobalLimpa = removerAcentos(nomeEstacaoGlobal)
 
         grupos.forEach { (tipo, comboios) ->
-            listaMista.add(tipo ?: "Outros")
-            val ordenados = comboios.sortedBy { c ->
-                c.paragens.find { it.estacao.contains(nomeEstacaoGlobal, true) }?.hora
-            }
-            listaMista.addAll(ordenados)
+            listaExibicao.add(tipo ?: "Comboio")
+            listaExibicao.addAll(comboios.sortedBy { c ->
+                c.paragens.find { removerAcentos(it.estacao).contains(estacaoGlobalLimpa, true) }?.hora
+            })
         }
-        adapter.atualizarLista(listaMista, nomeEstacaoGlobal)
+        adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal)
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressedDispatcher.onBackPressed()
+        return true
     }
 }
