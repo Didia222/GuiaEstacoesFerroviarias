@@ -6,18 +6,25 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.text.Normalizer
 
-//Define o comportamento da lista de comboios na intergace
 class ComboioAdapter(
     private var lista: List<Any>,
     private var estacaoSelecionada: String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-// constantes para distinguir os tipos de elementos na lista
+
     private val TYPE_HEADER = 0
     private val TYPE_ITEM = 1
-// Identifica se o dado na posição x é um titulo de categoria ou um comboio
-    override fun getItemViewType(position: Int): Int = if (lista[position] is String) TYPE_HEADER else TYPE_ITEM
 
+    // FUNÇÃO DE LIMPEZA: Como o firebase tem as letras das estações e paragens em letra minuscula e sem acentos os traços e espaços que os nomes das estações podem ter diferente da base do firebase.
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
+        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim()
+    }
+    // "// Sinaleiro da lista: verifica se o dado nesta posição é apenas um texto (então desenha um Cabeçalho) ou se é um objeto com dados (então desenha a caixa do Comboio)."
+    override fun getItemViewType(position: Int): Int = if (lista[position] is String) TYPE_HEADER else TYPE_ITEM
+    // vai buscar o layout item_cabecalho_tipo.xml e item_comboio.xml para moldes visuais de forma a tornar a view prenchida com esas informação
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == TYPE_HEADER) {
             val v = LayoutInflater.from(parent.context).inflate(R.layout.item_cabecalho_tipo, parent, false)
@@ -27,7 +34,7 @@ class ComboioAdapter(
             ComboioViewHolder(v)
         }
     }
-
+    // Prenchimento do layout formulado pela função anterior com os dados obtidos pela base de dedos e aqui tem-se o uso da função limpearTexto para vasculhar as paragens de um comboio para a Hora de Partida correta no ecrã.
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = lista[position]
         if (holder is HeaderViewHolder) {
@@ -38,14 +45,24 @@ class ComboioAdapter(
             holder.txtTipo.text = comboio.tipo
             holder.txtRota.text = comboio.destino
 
-            // Procura a hora exata nesta estação específica
-            val paragemAqui = comboio.paragens.find { it.estacao.contains(estacaoSelecionada, true) }
+            // --- LÓGICA CORRIGIDA AQUI ---
+            val estacaoMapaLimpa = limparTexto(estacaoSelecionada)
+
+            val paragemAqui = comboio.paragens.find { paragem ->
+                val nomeFirebaseLimpo = limparTexto(paragem.estacao)
+                // Verifica se um nome contém o outro (ex: "Porto Sao Bento" vs "Sao Bento")
+                nomeFirebaseLimpo.contains(estacaoMapaLimpa, true) ||
+                        estacaoMapaLimpa.contains(nomeFirebaseLimpo, true)
+            }
+
             holder.txtHoraPartida.text = paragemAqui?.hora ?: "--:--"
+            // -----------------------------
 
             holder.itemView.setOnClickListener {
                 val intent = Intent(it.context, ItinerarioActivity::class.java)
+                // IMPORTANTE: Garante que passas o objeto comboio
                 intent.putExtra("COMBOIO_OBJ", comboio)
-                intent.putExtra("ESTACAO_ORIGEM", estacaoSelecionada)
+                intent.putExtra("ESTACAO_ATUAL", estacaoSelecionada)
                 it.context.startActivity(intent)
             }
         }

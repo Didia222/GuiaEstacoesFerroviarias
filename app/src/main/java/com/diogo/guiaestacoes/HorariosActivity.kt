@@ -10,7 +10,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.Normalizer // Importante para remover acentos
+import java.text.Normalizer
 
 class HorariosActivity : AppCompatActivity() {
 
@@ -28,6 +28,7 @@ class HorariosActivity : AppCompatActivity() {
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarHorarios)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.navigationIcon?.setTint(android.graphics.Color.WHITE)
 
         // Ajuste para a câmara (notch) não tapar a barra
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->
@@ -58,23 +59,26 @@ class HorariosActivity : AppCompatActivity() {
         }
     }
 
-    // Função Mágica que tira os acentos (ex: "Santarém" vira "Santarem")
-    private fun removerAcentos(str: String): String {
-        return Normalizer.normalize(str, Normalizer.Form.NFD)
-            .replace("\\p{M}".toRegex(), "")
+    // FUNÇÃO MELHORADA: Remove acentos, hífens e espaços extra (ex: "Porto - São Bento" vira "Porto Sao Bento")
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
+        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim()
     }
-
+    // Vai ao firebase recolher informação apenas dos comboios que fazem paragem na estação selecionada
     private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
-        val estacaoProcuradaLimpa = removerAcentos(nomeEstacao)
+        val estacaoProcuradaLimpa = limparTexto(nomeEstacao)
 
         db.collection("comboios").get().addOnSuccessListener { documents ->
             val lista = mutableListOf<Comboio>()
             for (document in documents) {
                 val comboio = document.toObject(Comboio::class.java)
 
-                // Verifica se a estação (sem acentos) existe na lista do Firebase (sem acentos)
+                // Verifica cruzada: o mapa tem o nome do Firebase OU o Firebase tem o nome do mapa
                 val passaNestaEstacao = comboio.paragens.any { paragem ->
-                    removerAcentos(paragem.estacao).contains(estacaoProcuradaLimpa, ignoreCase = true)
+                    val nomeParagemLimpo = limparTexto(paragem.estacao)
+                    nomeParagemLimpo.contains(estacaoProcuradaLimpa, ignoreCase = true) ||
+                            estacaoProcuradaLimpa.contains(nomeParagemLimpo, ignoreCase = true)
                 }
 
                 if (passaNestaEstacao) {
@@ -87,36 +91,61 @@ class HorariosActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro ao ligar ao Firebase: ${it.message}", Toast.LENGTH_LONG).show()
         }
     }
+    // Verificador flexivel que identifica os comboios da paragem nao só pelo nome mas sim pelo seu numero, destino ou se é de umas paragens pelo meio
 
     private fun pesquisarSmarter(texto: String) {
-        val textoLimpo = removerAcentos(texto)
+        val textoLimpo = limparTexto(texto)
+        val estacaoAtualLimpa = limparTexto(nomeEstacaoGlobal)
 
         db.collection("comboios").get().addOnSuccessListener { documents ->
             val resultados = mutableListOf<Comboio>()
+
             for (document in documents) {
                 val comboio = document.toObject(Comboio::class.java)
 
-                val matchNumero = comboio.numero.contains(textoLimpo, true)
-                val matchDestino = removerAcentos(comboio.destino).contains(textoLimpo, true)
-                val matchParagem = comboio.paragens.any { removerAcentos(it.estacao).contains(textoLimpo, true) }
+                // 1. Descobrir a POSIÇÃO (índice) em que o comboio passa na nossa estação (ex: Penafiel)
+                val indexNossaEstacao = comboio.paragens.indexOfFirst {
+                    val nomeLimpo = limparTexto(it.estacao)
+                    nomeLimpo.contains(estacaoAtualLimpa, true) || estacaoAtualLimpa.contains(nomeLimpo, true)
+                }
 
-                if (matchNumero || matchDestino || matchParagem) {
+                // Se não passa na nossa estação (devolve -1), ignoramos logo este comboio
+                if (indexNossaEstacao == -1) continue
+
+                // 2. Verifica se o texto pesquisado é o NÚMERO do comboio
+                val matchNumero = comboio.numero.contains(textoLimpo, true)
+
+                // 3. A NOVA REGRA DE OURO (O Sentido da Viagem):
+                // Procura se a estação pesquisada (ex: Porto) existe e se fica DEPOIS da nossa estação
+                val sentidoCorreto = comboio.paragens.withIndex().any { (index, paragem) ->
+                    val nomeParagemLimpo = limparTexto(paragem.estacao)
+                    val correspondePesquisa = nomeParagemLimpo.contains(textoLimpo, true) || textoLimpo.contains(nomeParagemLimpo, true)
+
+                    // Só é válido se corresponder ao texto pesquisado E a paragem for mais à frente (index > indexNossaEstacao)
+                    correspondePesquisa && index > indexNossaEstacao
+                }
+
+                // Se o utilizador pesquisou pelo número ou se a direção está correta, mostramos o comboio!
+                if (matchNumero || sentidoCorreto) {
                     resultados.add(comboio)
                 }
             }
             exibirResultados(resultados)
         }
     }
-
+    //O "Arrumador": Pega nos comboios desorganizados que vêm do Firebase, agrupa-os por categoria (ex: Urbanos, AP) e ordena-os pela hora mais cedo.
     private fun exibirResultados(lista: List<Comboio>) {
         val listaExibicao = mutableListOf<Any>()
         val grupos = lista.groupBy { it.tipo }
-        val estacaoGlobalLimpa = removerAcentos(nomeEstacaoGlobal)
+        val estacaoGlobalLimpa = limparTexto(nomeEstacaoGlobal)
 
         grupos.forEach { (tipo, comboios) ->
             listaExibicao.add(tipo ?: "Comboio")
             listaExibicao.addAll(comboios.sortedBy { c ->
-                c.paragens.find { removerAcentos(it.estacao).contains(estacaoGlobalLimpa, true) }?.hora
+                c.paragens.find {
+                    val nomeParagem = limparTexto(it.estacao)
+                    nomeParagem.contains(estacaoGlobalLimpa, true) || estacaoGlobalLimpa.contains(nomeParagem, true)
+                }?.hora
             })
         }
         adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal)

@@ -25,7 +25,7 @@ object CsvHelper {
             emptyList()
         }
     }
-
+    //Leitura do fluxo de dados do csv presente no github
     fun carregarDeStream(inputStream: InputStream): List<Estacao> {
         val bytes = inputStream.readBytes()
         val conteudo = String(bytes, Charset.forName("UTF-8"))
@@ -75,7 +75,7 @@ object CsvHelper {
         }
         return listaEstacoes
     }
-
+    //Inspetor de segurança ele assegura que a informações vinda do csv online vem bem formatada e se nao tiver dá um aviso
     private fun getCellValue(record: CSVRecord, potentialNames: List<String>): String? {
         for (name in potentialNames) {
             try {
