@@ -10,7 +10,8 @@ import java.text.Normalizer
 
 class ComboioAdapter(
     private var lista: List<Any>,
-    private var estacaoSelecionada: String
+    private var estacaoSelecionada: String, // CORREÇÃO 1: Faltava a vírgula aqui!
+    private var destinoPesquisado: String = ""
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val TYPE_HEADER = 0
@@ -63,6 +64,7 @@ class ComboioAdapter(
                 // IMPORTANTE: Garante que passas o objeto comboio
                 intent.putExtra("COMBOIO_OBJ", comboio)
                 intent.putExtra("ESTACAO_ATUAL", estacaoSelecionada)
+                intent.putExtra("DESTINO_PESQUISADO", destinoPesquisado) // CORREÇÃO 2: Removido o "Z" no final
                 it.context.startActivity(intent)
             }
         }
@@ -70,9 +72,10 @@ class ComboioAdapter(
 
     override fun getItemCount(): Int = lista.size
 
-    fun atualizarLista(novaLista: List<Any>, estacao: String) {
+    fun atualizarLista(novaLista: List<Any>, estacao: String, destino: String = "") {
         this.lista = novaLista
         this.estacaoSelecionada = estacao
+        this.destinoPesquisado = destino
         notifyDataSetChanged()
     }
 
