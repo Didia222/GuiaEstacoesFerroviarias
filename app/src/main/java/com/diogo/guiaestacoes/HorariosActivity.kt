@@ -20,6 +20,7 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var etNumeroComboio: EditText
     private lateinit var btnPesquisar: Button
     private var nomeEstacaoGlobal: String = ""
+    private var textoPesquisado: String = "" // AQUI: Variável para guardar o destino pesquisado!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +55,7 @@ class HorariosActivity : AppCompatActivity() {
 
         btnPesquisar.setOnClickListener {
             val texto = etNumeroComboio.text.toString().trim()
+            textoPesquisado = texto // AQUI: Guarda o destino sempre que o utilizador clica em pesquisar
             if (texto.isNotEmpty()) pesquisarSmarter(texto)
             else pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
         }
@@ -65,9 +67,11 @@ class HorariosActivity : AppCompatActivity() {
         val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
         return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim()
     }
+
     // Vai ao firebase recolher informação apenas dos comboios que fazem paragem na estação selecionada
     private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
         val estacaoProcuradaLimpa = limparTexto(nomeEstacao)
+        textoPesquisado = "" // AQUI: Se não há pesquisa, limpa a variável de destino
 
         db.collection("comboios").get().addOnSuccessListener { documents ->
             val lista = mutableListOf<Comboio>()
@@ -91,8 +95,8 @@ class HorariosActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro ao ligar ao Firebase: ${it.message}", Toast.LENGTH_LONG).show()
         }
     }
-    // Verificador flexivel que identifica os comboios da paragem nao só pelo nome mas sim pelo seu numero, destino ou se é de umas paragens pelo meio
 
+    // Verificador flexivel que identifica os comboios da paragem nao só pelo nome mas sim pelo seu numero, destino ou se é de umas paragens pelo meio
     private fun pesquisarSmarter(texto: String) {
         val textoLimpo = limparTexto(texto)
         val estacaoAtualLimpa = limparTexto(nomeEstacaoGlobal)
@@ -133,6 +137,7 @@ class HorariosActivity : AppCompatActivity() {
             exibirResultados(resultados)
         }
     }
+
     //O "Arrumador": Pega nos comboios desorganizados que vêm do Firebase, agrupa-os por categoria (ex: Urbanos, AP) e ordena-os pela hora mais cedo.
     private fun exibirResultados(lista: List<Comboio>) {
         val listaExibicao = mutableListOf<Any>()
@@ -148,7 +153,9 @@ class HorariosActivity : AppCompatActivity() {
                 }?.hora
             })
         }
-        adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal)
+
+        // AQUI ESTAVA O SEGREDO: Envias agora o textoPesquisado para o adaptador!
+        adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal, textoPesquisado)
     }
 
     override fun onSupportNavigateUp(): Boolean {
