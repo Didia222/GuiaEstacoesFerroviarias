@@ -47,9 +47,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
     private val listaMarcadores = mutableListOf<Marker>()
 
-    // DICA: Usei o link /raw/estacoes.csv para que as tuas edições no Gist entrem direto na app!
-    // Link "mestre": A app não tem as estações "presas" no código.
-    // Ela vai buscar este ficheiro à internet (GitHub) para ter sempre a lista mais atualizada.
     private val URL_DADOS = "https://gist.githubusercontent.com/Didia222/ce7ecbc46a6eebcb912d47c0741eb02f/raw/estacoes.csv"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +60,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
 
-        // GATILHO DE ADMIN: Clique longo na SearchView para limpar o Firebase
         findViewById<SearchView>(R.id.searchViewEstacoes).setOnLongClickListener {
             if (listaEstacoesOficiais.isNotEmpty()) {
                 iniciarSaneamentoDeDados(listaEstacoesOficiais)
@@ -106,7 +102,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
     }
 
-    // --- LÓGICA DE NORMALIZAÇÃO PROFISSIONAL ---
     private fun normalizarTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
         val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
@@ -125,7 +120,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 val comboio = document.toObject(Comboio::class.java)
                 val paragensOriginais = comboio.paragens
 
-                // Filtra mantendo apenas o que existe no CSV
                 val paragensValidas = paragensOriginais.filter { paragem ->
                     val existe = nomesOficiaisSet.contains(normalizarTexto(paragem.estacao))
                     if (!existe) Log.w("SANEAMENTO", "Removida paragem inválida: ${paragem.estacao}")
@@ -140,9 +134,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             Toast.makeText(this, "Saneamento concluído! $comboiosLimpas comboios corrigidos.", Toast.LENGTH_LONG).show()
         }
     }
-    // Gestor de Dados
-    // 1º Tenta descarregar a lista nova da Internet
-    // 2º Se não houver rede, carrega a ultima versão guardada na base de dados interna (Room)
+
     private fun carregarDados() {
         lifecycleScope.launch(Dispatchers.IO) {
             val dao = AppDatabase.getDatabase(applicationContext).estacaoDao()
@@ -170,7 +162,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (listaFinal.isEmpty()) listaFinal = dao.obterTodas()
 
             withContext(Dispatchers.Main) {
-                listaEstacoesOficiais = listaFinal // Guarda para a auditoria
+                listaEstacoesOficiais = listaFinal
                 atualizarListaDeNomesParaSugestoes(listaFinal)
 
                 if (listaFinal.isNotEmpty()) {
@@ -205,9 +197,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    // --- MÉTODOS OBRIGATÓRIOS DO MAPA E PERMISSÕES ---
-    // O "Cenógrafo" do mapa: Assim que o Google Maps acaba de carregar,
-    // esta função centra a câmara exatamente em Portugal Continental com o zoom ideal.
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.setOnMarkerClickListener(this)
@@ -228,7 +217,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         view.findViewById<Button>(R.id.btnVerMais).setOnClickListener {
             val intent = Intent(this, DetalhesActivity::class.java).apply {
                 putExtra("NOME", marker.title)
-                putExtra("DESCRICAO", marker.snippet)
+                putExtra("TIPO", marker.snippet)
             }
             startActivity(intent)
             dialog.dismiss()
@@ -242,8 +231,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             dialog.dismiss()
         }
 
-        dialog.show()
-        return true
+        view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
+            val intent = Intent(this, GaleriaActivity::class.java).apply {
+                putExtra("NOME", marker.title)
+            }
+            startActivity(intent)
+            dialog.dismiss()
+        }
+
+        dialog.show() // <--- Mostra o diálogo
+        return true   // <--- Retorna true para confirmar o processamento do clique
     }
 
     private fun ativarLocalizacaoUsuario() {
@@ -259,7 +256,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    // O nosso "Tradutor": Remove acentos, maiúsculas, traços e espaços extra.
     private fun filtrarSugestoes(query: String?) {
         val cursor = MatrixCursor(arrayOf(BaseColumns._ID, "estacaoNome"))
         if (!query.isNullOrBlank()) {

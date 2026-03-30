@@ -1,45 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
+    android:padding="24dp"
     android:background="@android:color/white">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:background="#E0E0E0" />
 
     <TextView
         android:id="@+id/tvNomeEstacao"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Nome da Estação"
-        android:textSize="22sp"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black" />
+        android:textColor="#1D1D1D" />
 
     <TextView
         android:id="@+id/tvDescricao"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Descrição ou tipo de estação"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp"
-        android:textColor="@android:color/darker_gray" />
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:textColor="#757575" />
 
-    <Button
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="20dp" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnVerHorarios"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Ver Próximos Comboios"
-        android:backgroundTint="#2196F3"
+        android:layout_height="55dp"
+        android:text="Ver Horários dos Comboios"
+        android:textSize="16sp"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#0D47A1"
+        app:icon="@android:drawable/ic_menu_recent_history"
+        app:iconGravity="textStart"
         android:textColor="@android:color/white" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnVerMais"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="55dp"
         android:layout_marginTop="8dp"
-        android:text="Detalhes Históricos"
-        android:backgroundTint="#757575"
-        android:textColor="@android:color/white" />
+        android:text="Ler História e Curiosidades"
+        android:textSize="16sp"
+        app:cornerRadius="12dp"
+        app:icon="@android:drawable/ic_menu_info_details"
+        app:iconGravity="textStart" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGaleria"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="8dp"
+        android:text="Galeria de Fotos"
+        android:textSize="16sp"
+        app:cornerRadius="12dp"
+        app:icon="@android:drawable/ic_menu_camera"
+        app:iconGravity="textStart" />
 
 </LinearLayout>
