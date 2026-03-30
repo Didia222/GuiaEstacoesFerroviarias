@@ -7,7 +7,6 @@ import android.database.MatrixCursor
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -60,6 +59,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
 
+        // Removido o FirebaseSeeder e restaurado o saneamento original
         findViewById<SearchView>(R.id.searchViewEstacoes).setOnLongClickListener {
             if (listaEstacoesOficiais.isNotEmpty()) {
                 iniciarSaneamentoDeDados(listaEstacoesOficiais)
@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 val cursor = searchView.suggestionsAdapter.getItem(position) as android.database.Cursor
                 val nomeSelecionado = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
                 searchView.setQuery(nomeSelecionado, true)
+                procurarEstacaoNoMapa(nomeSelecionado)
                 return true
             }
         })
@@ -231,16 +232,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             dialog.dismiss()
         }
 
-        view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
-            val intent = Intent(this, GaleriaActivity::class.java).apply {
-                putExtra("NOME", marker.title)
-            }
-            startActivity(intent)
-            dialog.dismiss()
-        }
-
-        dialog.show() // <--- Mostra o diálogo
-        return true   // <--- Retorna true para confirmar o processamento do clique
+        dialog.show()
+        return true
     }
 
     private fun ativarLocalizacaoUsuario() {

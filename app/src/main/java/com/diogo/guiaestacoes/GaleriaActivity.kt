@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.text.Normalizer
@@ -27,20 +28,29 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// 1. O Modelo de Dados do Comentário
+// Modelo para os Comentários
 data class Comentario(
     val texto: String = "",
     val estacaoId: String = "",
     val timestamp: Long = 0L
 )
 
+// Modelo para as Fotos
+data class FotoEstacao(
+    val url: String = "",
+    val estacaoId: String = ""
+)
+
 class GaleriaActivity : AppCompatActivity() {
 
     private val db = FirebaseFirestore.getInstance()
-    private lateinit var rvComentarios: RecyclerView
-    private lateinit var adapterComentarios: ComentarioAdapter
-    private val listaComentarios = mutableListOf<Comentario>()
     private lateinit var idEstacaoLimpo: String
+
+    private val listaFotos = mutableListOf<String>()
+    private lateinit var adapterFotos: FotoAdapter
+
+    private val listaComentarios = mutableListOf<Comentario>()
+    private lateinit var adapterComentarios: ComentarioAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,77 +59,96 @@ class GaleriaActivity : AppCompatActivity() {
         val nomeEstacao = intent.getStringExtra("NOME") ?: "Estação"
         idEstacaoLimpo = limparTexto(nomeEstacao)
 
-        // Configurar a Toolbar
+        // Configurar UI
         val toolbar = findViewById<Toolbar>(R.id.toolbarGaleria)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Galeria de $nomeEstacao"
-        toolbar.setTitleTextColor(Color.BLACK)
-        toolbar.navigationIcon?.setTint(Color.BLACK)
 
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->
-            val statusBar = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            view.setPadding(0, statusBar.top, 0, 0)
+        // Ajuste para o Notch
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            v.setPadding(0, statusBars.top, 0, 0)
             insets
         }
 
-        // --- GRELHA DE FOTOS ---
+        // 1. Configurar Grelha de Fotos (RecyclerView Superior)
         val rvFotos = findViewById<RecyclerView>(R.id.rvFotos)
-        rvFotos.layoutManager = GridLayoutManager(this, 2) // 2 Colunas como no teu protótipo!
+        rvFotos.layoutManager = GridLayoutManager(this, 2) // 2 colunas como no protótipo
+        adapterFotos = FotoAdapter(listaFotos)
+        rvFotos.adapter = adapterFotos
 
-        // Imagens de Alta Qualidade (Mockup para a apresentação)
-        val imagensExemplo = listOf(
-            "https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?w=500",
-            "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=500",
-            "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=500",
-            "https://images.unsplash.com/photo-1532105956626-9569c03602f6?w=500"
-        )
-        rvFotos.adapter = FotoAdapter(imagensExemplo)
-
-        // --- LISTA DE COMENTÁRIOS ---
-        rvComentarios = findViewById(R.id.rvComentarios)
+        // 2. Configurar Lista de Comentários (RecyclerView Inferior)
+        val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.adapter = adapterComentarios
 
-        // --- ENVIAR COMENTÁRIO ---
+        // 3. Lógica do Botão Enviar Comentário
         val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
-        val btnEnviar = findViewById<ImageButton>(R.id.btnEnviarComentario)
-
-        btnEnviar.setOnClickListener {
+        findViewById<ImageButton>(R.id.btnEnviarComentario).setOnClickListener {
             val texto = etNovoComentario.text.toString().trim()
             if (texto.isNotEmpty()) {
-                salvarComentarioNoFirebase(texto)
-                etNovoComentario.text.clear() // Limpa a caixa
+                enviarComentarioParaFirebase(texto)
+                etNovoComentario.text.clear()
             }
         }
 
-        // Carregar comentários em tempo real!
+        // 4. Lógica do Botão Adicionar Foto (FAB)
+        findViewById<FloatingActionButton>(R.id.fabAdicionarFoto).setOnClickListener {
+            Toast.makeText(this, "Funcionalidade de Upload em breve!", Toast.LENGTH_LONG).show()
+        }
+
+        // Iniciar escuta de dados em tempo real
+        carregarFotosDoFirebase()
         carregarComentariosDoFirebase()
     }
 
-    private fun salvarComentarioNoFirebase(texto: String) {
-        val novoComentario = Comentario(texto, idEstacaoLimpo, System.currentTimeMillis())
-        db.collection("comentarios").add(novoComentario)
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao enviar comentário.", Toast.LENGTH_SHORT).show()
+    private fun carregarFotosDoFirebase() {
+        db.collection("fotos_estacoes")
+            .whereEqualTo("estacaoId", idEstacaoLimpo)
+            .addSnapshotListener { snapshots, _ ->
+                if (snapshots == null) return@addSnapshotListener
+                listaFotos.clear()
+                for (doc in snapshots) {
+                    val foto = doc.toObject(FotoEstacao::class.java)
+                    if (foto.url.isNotEmpty()) listaFotos.add(foto.url)
+                }
+                // Foto padrão se estiver vazio para não ficar feio
+                if (listaFotos.isEmpty()) {
+                    listaFotos.add("https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?w=500")
+                }
+                adapterFotos.notifyDataSetChanged()
             }
     }
 
     private fun carregarComentariosDoFirebase() {
         db.collection("comentarios")
             .whereEqualTo("estacaoId", idEstacaoLimpo)
-            .orderBy("timestamp", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshots, e ->
-                if (e != null || snapshots == null) return@addSnapshotListener
-
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, _ ->
+                if (snapshots == null) return@addSnapshotListener
                 listaComentarios.clear()
                 for (doc in snapshots) {
-                    val com = doc.toObject(Comentario::class.java)
-                    listaComentarios.add(com)
+                    listaComentarios.add(doc.toObject(Comentario::class.java))
                 }
                 adapterComentarios.notifyDataSetChanged()
             }
+    }
+
+    private fun enviarComentarioParaFirebase(texto: String) {
+        val novo = Comentario(texto, idEstacaoLimpo, System.currentTimeMillis())
+        db.collection("comentarios").add(novo)
+            .addOnFailureListener {
+                Toast.makeText(this, "Erro ao comentar.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
+            .replace(normalizado, "")
+            .replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -127,63 +156,31 @@ class GaleriaActivity : AppCompatActivity() {
         return true
     }
 
-    private fun limparTexto(texto: String): String {
-        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
-        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
+    // --- ADAPTERS INTERNOS ---
+
+    inner class FotoAdapter(private val urls: List<String>) : RecyclerView.Adapter<FotoAdapter.VH>() {
+        inner class VH(v: View) : RecyclerView.ViewHolder(v) { val img: ImageView = v as ImageView }
+        override fun onCreateViewHolder(p: ViewGroup, t: Int) = VH(ImageView(p.context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 450).apply { setMargins(8, 8, 8, 8) }
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        })
+        override fun onBindViewHolder(h: VH, p: Int) {
+            Glide.with(h.itemView).load(urls[p]).transform(CenterCrop(), RoundedCorners(32)).into(h.img)
+        }
+        override fun getItemCount() = urls.size
     }
 
-    // =========================================================
-    // ADAPTERS (Classes internas para desenhar as listas)
-    // =========================================================
-
-    // 1. ADAPTER DAS FOTOS
-    inner class FotoAdapter(private val fotosUrls: List<String>) : RecyclerView.Adapter<FotoAdapter.FotoViewHolder>() {
-        inner class FotoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val imagem: ImageView = view.findViewById(android.R.id.icon)
+    inner class ComentarioAdapter(private val list: List<Comentario>) : RecyclerView.Adapter<ComentarioAdapter.VH>() {
+        inner class VH(v: View) : RecyclerView.ViewHolder(v) {
+            val txt: TextView = v.findViewById(android.R.id.text1)
+            val sub: TextView = v.findViewById(android.R.id.text2)
         }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FotoViewHolder {
-            // Criamos a ImageView via código para ser mais rápido (sem precisar de outro XML)
-            val imageView = ImageView(parent.context).apply {
-                layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 400).apply { setMargins(8, 8, 8, 8) }
-                id = android.R.id.icon
-            }
-            return FotoViewHolder(imageView)
+        override fun onCreateViewHolder(p: ViewGroup, t: Int) = VH(LayoutInflater.from(p.context).inflate(android.R.layout.simple_list_item_2, p, false))
+        override fun onBindViewHolder(h: VH, p: Int) {
+            h.txt.text = list[p].texto
+            val data = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(list[p].timestamp))
+            h.sub.text = data
         }
-
-        override fun onBindViewHolder(holder: FotoViewHolder, position: Int) {
-            // O Glide carrega a imagem do URL da internet, arredonda os cantos e coloca na ImageView!
-            Glide.with(holder.itemView.context)
-                .load(fotosUrls[position])
-                .transform(CenterCrop(), RoundedCorners(24))
-                .into(holder.imagem)
-        }
-        override fun getItemCount() = fotosUrls.size
-    }
-
-    // 2. ADAPTER DOS COMENTÁRIOS
-    inner class ComentarioAdapter(private val comentarios: List<Comentario>) : RecyclerView.Adapter<ComentarioAdapter.ComentarioViewHolder>() {
-        inner class ComentarioViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvTexto: TextView = view.findViewById(android.R.id.text1)
-            val tvData: TextView = view.findViewById(android.R.id.text2)
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ComentarioViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(android.R.layout.simple_list_item_2, parent, false)
-            return ComentarioViewHolder(view)
-        }
-
-        override fun onBindViewHolder(holder: ComentarioViewHolder, position: Int) {
-            val comentario = comentarios[position]
-            holder.tvTexto.text = comentario.texto
-            holder.tvTexto.setTextColor(Color.DKGRAY)
-            holder.tvTexto.textSize = 16f
-
-            val dataFormatada = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("pt", "PT")).format(Date(comentario.timestamp))
-            holder.tvData.text = dataFormatada
-            holder.tvData.setTextColor(Color.GRAY)
-        }
-        override fun getItemCount() = comentarios.size
+        override fun getItemCount() = list.size
     }
 }
