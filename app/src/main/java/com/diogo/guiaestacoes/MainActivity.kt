@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
 
-        // Removido o FirebaseSeeder e restaurado o saneamento original
+        // Atalho para Saneamento (Long Click na barra de pesquisa)
         findViewById<SearchView>(R.id.searchViewEstacoes).setOnLongClickListener {
             if (listaEstacoesOficiais.isNotEmpty()) {
                 iniciarSaneamentoDeDados(listaEstacoesOficiais)
@@ -103,37 +103,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
     }
 
+    // Única função de normalização para evitar conflitos
     private fun normalizarTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
-        return semAcentos.uppercase().replace("[^A-Z0-9]".toRegex(), "").trim()
-    }
-
-    private fun iniciarSaneamentoDeDados(estacoesOficiais: List<Estacao>) {
-        val db = FirebaseFirestore.getInstance()
-        val nomesOficiaisSet = estacoesOficiais.map { normalizarTexto(it.nome) }.toSet()
-
-        Toast.makeText(this, "A iniciar saneamento de dados...", Toast.LENGTH_SHORT).show()
-
-        db.collection("comboios").get().addOnSuccessListener { documents ->
-            var comboiosLimpas = 0
-            for (document in documents) {
-                val comboio = document.toObject(Comboio::class.java)
-                val paragensOriginais = comboio.paragens
-
-                val paragensValidas = paragensOriginais.filter { paragem ->
-                    val existe = nomesOficiaisSet.contains(normalizarTexto(paragem.estacao))
-                    if (!existe) Log.w("SANEAMENTO", "Removida paragem inválida: ${paragem.estacao}")
-                    existe
-                }
-
-                if (paragensValidas.size != paragensOriginais.size) {
-                    comboiosLimpas++
-                    db.collection("comboios").document(document.id).update("paragens", paragensValidas)
-                }
-            }
-            Toast.makeText(this, "Saneamento concluído! $comboiosLimpas comboios corrigidos.", Toast.LENGTH_LONG).show()
-        }
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
+            .replace(normalizado, "")
+            .replace("-", " ")
+            .replace("\\s+".toRegex(), " ")
+            .trim().uppercase()
     }
 
     private fun carregarDados() {
@@ -164,7 +141,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
             withContext(Dispatchers.Main) {
                 listaEstacoesOficiais = listaFinal
-                atualizarListaDeNomesParaSugestoes(listaFinal)
+                todosOsNomesEstacoes = listaFinal.map { it.nome }
 
                 if (listaFinal.isNotEmpty()) {
                     map.clear()
@@ -186,8 +163,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun procurarEstacaoNoMapa(nome: String) {
         val nomeProcurado = normalizarTexto(nome)
         val marcadorEncontrado = listaMarcadores.find {
-            normalizarTexto(it.title ?: "") == nomeProcurado ||
-                    normalizarTexto(it.title ?: "").contains(nomeProcurado)
+            normalizarTexto(it.title ?: "").contains(nomeProcurado)
         }
 
         if (marcadorEncontrado != null) {
@@ -203,7 +179,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnMarkerClickListener(this)
         val centroPortugal = LatLng(39.3999, -8.2245)
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(centroPortugal, 7f))
-        ativarLocalizacaoUsuario()
+        ativarLocalizacaoUsuario() // Aqui vai pedir permissão e ampliar a câmara
         carregarDados()
     }
 
@@ -215,20 +191,36 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         view.findViewById<TextView>(R.id.tvNomeEstacao).text = marker.title
         view.findViewById<TextView>(R.id.tvDescricao).text = marker.snippet
 
+        // 1. Botão História (Ver Mais)
         view.findViewById<Button>(R.id.btnVerMais).setOnClickListener {
-            val intent = Intent(this, DetalhesActivity::class.java).apply {
+            startActivity(Intent(this, DetalhesActivity::class.java).apply {
                 putExtra("NOME", marker.title)
                 putExtra("TIPO", marker.snippet)
-            }
-            startActivity(intent)
+            })
             dialog.dismiss()
         }
 
+        // 2. Botão Horários
         view.findViewById<Button>(R.id.btnVerHorarios).setOnClickListener {
-            val intent = Intent(this, HorariosActivity::class.java).apply {
+            startActivity(Intent(this, HorariosActivity::class.java).apply {
                 putExtra("ESTACAO_NOME", marker.title)
-            }
-            startActivity(intent)
+            })
+            dialog.dismiss()
+        }
+
+        // 3. Botão Galeria
+        view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
+            startActivity(Intent(this, GaleriaActivity::class.java).apply {
+                putExtra("NOME", marker.title)
+            })
+            dialog.dismiss()
+        }
+
+        // 4. Botão Avaliar (Requisito Estrelas)
+        view.findViewById<Button>(R.id.btnAvaliar).setOnClickListener {
+            startActivity(Intent(this, AvaliacaoActivity::class.java).apply {
+                putExtra("NOME", marker.title)
+            })
             dialog.dismiss()
         }
 
@@ -236,6 +228,29 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         return true
     }
 
+    private fun iniciarSaneamentoDeDados(estacoesOficiais: List<Estacao>) {
+        val db = FirebaseFirestore.getInstance()
+        val nomesOficiaisSet = estacoesOficiais.map { normalizarTexto(it.nome) }.toSet()
+
+        db.collection("comboios").get().addOnSuccessListener { documents ->
+            var comboiosLimpas = 0
+            for (document in documents) {
+                val comboio = document.toObject(Comboio::class.java)
+                val paragensOriginais = comboio.paragens
+                val paragensValidas = paragensOriginais.filter {
+                    nomesOficiaisSet.contains(normalizarTexto(it.estacao))
+                }
+
+                if (paragensValidas.size != paragensOriginais.size) {
+                    comboiosLimpas++
+                    db.collection("comboios").document(document.id).update("paragens", paragensValidas)
+                }
+            }
+            Toast.makeText(this, "Saneamento concluído: $comboiosLimpas corrigidos.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // CORRIGIDO: Agora a câmara amplia para o utilizador ao iniciar
     private fun ativarLocalizacaoUsuario() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             map.isMyLocationEnabled = true
@@ -249,6 +264,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            ativarLocalizacaoUsuario()
+        }
+    }
+
     private fun filtrarSugestoes(query: String?) {
         val cursor = MatrixCursor(arrayOf(BaseColumns._ID, "estacaoNome"))
         if (!query.isNullOrBlank()) {
@@ -257,9 +279,5 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             sugestoes.forEachIndexed { index, nome -> cursor.addRow(arrayOf(index, nome)) }
         }
         sugestoesAdapter.changeCursor(cursor)
-    }
-
-    private fun atualizarListaDeNomesParaSugestoes(lista: List<Estacao>) {
-        todosOsNomesEstacoes = lista.map { it.nome }
     }
 }

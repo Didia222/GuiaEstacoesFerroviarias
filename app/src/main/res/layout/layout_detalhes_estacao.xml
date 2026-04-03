@@ -18,7 +18,6 @@
         android:id="@+id/tvNomeEstacao"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nome da Estação"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#1D1D1D" />
@@ -27,7 +26,6 @@
         android:id="@+id/tvDescricao"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Descrição ou tipo de estação"
         android:textSize="14sp"
         android:layout_marginTop="4dp"
         android:textColor="#757575" />
@@ -40,13 +38,11 @@
         android:id="@+id/btnVerHorarios"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:text="Ver Horários dos Comboios"
-        android:textSize="16sp"
+        android:text="Ver Horários"
         app:cornerRadius="12dp"
         app:backgroundTint="#0D47A1"
         app:icon="@android:drawable/ic_menu_recent_history"
-        app:iconGravity="textStart"
-        android:textColor="@android:color/white" />
+        app:iconGravity="textStart" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnVerMais"
@@ -54,8 +50,7 @@
         android:layout_width="match_parent"
         android:layout_height="55dp"
         android:layout_marginTop="8dp"
-        android:text="Ler História e Curiosidades"
-        android:textSize="16sp"
+        android:text="Ler História"
         app:cornerRadius="12dp"
         app:icon="@android:drawable/ic_menu_info_details"
         app:iconGravity="textStart" />
@@ -67,9 +62,19 @@
         android:layout_height="55dp"
         android:layout_marginTop="8dp"
         android:text="Galeria de Fotos"
-        android:textSize="16sp"
         app:cornerRadius="12dp"
         app:icon="@android:drawable/ic_menu_camera"
         app:iconGravity="textStart" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAvaliar"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="8dp"
+        android:text="⭐ Avaliar Estação"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#FFF8E1"
+        android:textColor="#FF8F00" />
 
 </LinearLayout>
