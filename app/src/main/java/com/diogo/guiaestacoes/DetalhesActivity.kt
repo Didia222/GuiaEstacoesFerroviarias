@@ -5,15 +5,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import java.util.UUID
 
@@ -29,34 +31,38 @@ class DetalhesActivity : AppCompatActivity() {
     // Variáveis da Estação
     private var nomeEstacao: String = ""
 
+    // Variáveis da Lista de Comentários
+    private lateinit var adapter: ComentarioAdapter
+    private val listaComentarios = mutableListOf<Comentario>()
+
     // Lançador para abrir a Galeria
-    private val selecionarImagemLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val data: Intent? = result.data
-            uriImagemSelecionada = data?.data
-            if (uriImagemSelecionada != null) {
-                Toast.makeText(this, "Foto selecionada com sucesso! 📷", Toast.LENGTH_SHORT).show()
-                // Aqui poderíamos mudar a cor do botão ou mostrar um mini-preview
+    private val selecionarImagemLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data: Intent? = result.data
+                uriImagemSelecionada = data?.data
+                if (uriImagemSelecionada != null) {
+                    Toast.makeText(this, "Foto selecionada! 📷", Toast.LENGTH_SHORT).show()
+                }
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalhes)
 
-        // Inicializar Firebase
+        // 1. Inicializar Firebase
         db = FirebaseFirestore.getInstance()
         storage = FirebaseStorage.getInstance()
 
-        // Receber dados da MainActivity
+        // 2. Receber dados da Intent
         nomeEstacao = intent.getStringExtra("NOME") ?: ""
         val tipo = intent.getStringExtra("TIPO") ?: ""
         val historia = intent.getStringExtra("HISTORIA") ?: ""
         val lat = intent.getDoubleExtra("LATITUDE", 0.0)
         val lng = intent.getDoubleExtra("LONGITUDE", 0.0)
 
-        // Configurar Interface da História
+        // 3. Configurar UI Básica
         val tvTitulo = findViewById<TextView>(R.id.tvTituloDetalhe)
         val tvTipo = findViewById<TextView>(R.id.tvTipoDetalhe)
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
@@ -67,7 +73,17 @@ class DetalhesActivity : AppCompatActivity() {
         tvTipo.text = tipo
         tvConteudo.text = historia
 
-        // Botão Ver no Mapa
+        // 4. Configurar a Lista (RecyclerView) de Comentários
+        val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
+        adapter = ComentarioAdapter(listaComentarios)
+        rvComentarios.layoutManager = LinearLayoutManager(this)
+        rvComentarios.adapter = adapter
+
+        // 5. Começar a ouvir os comentários do Firebase
+        ouvirComentarios()
+
+        // --- CLIQUES ---
+
         btnVerNoMapa.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra("LAT_RETORNO", lat)
@@ -78,50 +94,69 @@ class DetalhesActivity : AppCompatActivity() {
             finish()
         }
 
-        // Botão Expandir História
         btnExpandir.setOnClickListener {
             if (isExpanded) {
                 tvConteudo.maxLines = 4
                 btnExpandir.setImageResource(R.drawable.ic_expand_more)
             } else {
                 tvConteudo.maxLines = Integer.MAX_VALUE
-                btnExpandir.setImageResource(R.drawable.ic_expand_less) // Opcional: cria um ícone ic_expand_less
+                btnExpandir.setImageResource(R.drawable.ic_expand_less)
             }
             isExpanded = !isExpanded
         }
-
-        // --- LÓGICA DOS COMENTÁRIOS E FOTOS ---
 
         val btnTirarFoto = findViewById<ImageButton>(R.id.btnTirarFoto)
         val btnEnviarComentario = findViewById<ImageButton>(R.id.btnEnviarComentario)
         val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
 
-        // 1. Abrir Galeria
-        btnTirarFoto.setOnClickListener {
-            abrirGaleria()
-        }
+        btnTirarFoto.setOnClickListener { abrirGaleria() }
 
-        // 2. Enviar Comentário
         btnEnviarComentario.setOnClickListener {
             val textoComentario = etNovoComentario.text.toString().trim()
-
             if (textoComentario.isEmpty() && uriImagemSelecionada == null) {
                 Toast.makeText(this, "Escreve algo ou escolhe uma foto!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Desativar botão para não enviar 2 vezes
             btnEnviarComentario.isEnabled = false
             Toast.makeText(this, "A enviar... ⏳", Toast.LENGTH_SHORT).show()
 
             if (uriImagemSelecionada != null) {
-                // Tem foto: Fazer upload primeiro
-                fazerUploadImagemEGuardarComentario(textoComentario, etNovoComentario, btnEnviarComentario)
+                fazerUploadImagemEGuardarComentario(
+                    textoComentario,
+                    etNovoComentario,
+                    btnEnviarComentario
+                )
             } else {
-                // Não tem foto: Guardar só o texto diretamente
-                guardarComentarioNoFirestore(textoComentario, "", etNovoComentario, btnEnviarComentario)
+                guardarComentarioNoFirestore(
+                    textoComentario,
+                    "",
+                    etNovoComentario,
+                    btnEnviarComentario
+                )
             }
         }
+    }
+
+    private fun ouvirComentarios() {
+        // Esta função vai à coleção "comentarios" e busca apenas os desta estação
+        db.collection("comentarios")
+            .whereEqualTo("id_estacao", nomeEstacao)
+            .orderBy("timestamp", Query.Direction.DESCENDING) // Mais recentes primeiro
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    listaComentarios.clear()
+                    for (doc in snapshots) {
+                        val comentario = doc.toObject(Comentario::class.java)
+                        listaComentarios.add(comentario)
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+            }
     }
 
     private fun abrirGaleria() {
@@ -129,47 +164,59 @@ class DetalhesActivity : AppCompatActivity() {
         selecionarImagemLauncher.launch(intent)
     }
 
-    private fun fazerUploadImagemEGuardarComentario(texto: String, inputField: EditText, btnEnviar: ImageButton) {
-        val fileName = UUID.randomUUID().toString() + ".jpg" // Nome único para a foto
+    private fun fazerUploadImagemEGuardarComentario(
+        texto: String,
+        inputField: EditText,
+        btnEnviar: ImageButton
+    ) {
+        val fileName = UUID.randomUUID().toString() + ".jpg"
         val refStorage = storage.reference.child("fotos_estacoes/$fileName")
 
         refStorage.putFile(uriImagemSelecionada!!)
             .addOnSuccessListener {
-                // Upload com sucesso! Agora vamos pedir o link público
                 refStorage.downloadUrl.addOnSuccessListener { uri ->
-                    val urlDaFoto = uri.toString()
-                    guardarComentarioNoFirestore(texto, urlDaFoto, inputField, btnEnviar)
+                    guardarComentarioNoFirestore(texto, uri.toString(), inputField, btnEnviar)
                 }
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao enviar foto: ${e.message}", Toast.LENGTH_LONG).show()
+            .addOnFailureListener {
                 btnEnviar.isEnabled = true
             }
     }
 
-    private fun guardarComentarioNoFirestore(texto: String, urlFoto: String, inputField: EditText, btnEnviar: ImageButton) {
-        // Criar o objeto usando o nosso "molde"
-        val idComentarioGerado = db.collection("Comentarios").document().id
+    private fun guardarComentarioNoFirestore(
+        texto: String,
+        urlFoto: String,
+        inputField: EditText,
+        btnEnviar: ImageButton
+    ) {
+
+        // 1. Criamos uma referência para um novo documento vazio para obter o ID gerado pela Google
+        val novoDocumentoRef = db.collection("comentarios").document()
+        val idGerado = novoDocumentoRef.id
+
+        // 2. Criamos o objeto já com esse ID lá dentro
         val novoComentario = Comentario(
-            id_comentario = idComentarioGerado,
+            id_comentario = idGerado, // <--- Aqui está ele!
             id_estacao = nomeEstacao,
             autor = "Viajante Anónimo",
             texto = texto,
-            url_foto = urlFoto
+            url_foto = urlFoto,
+            timestamp = System.currentTimeMillis()
         )
 
-        db.collection("Comentarios").document(idComentarioGerado)
-            .set(novoComentario)
+        // 3. Guardamos no Firebase usando esse ID
+        novoDocumentoRef.set(novoComentario)
             .addOnSuccessListener {
-                Toast.makeText(this, "Comentário publicado! 🎉", Toast.LENGTH_SHORT).show()
-                // Limpar o campo e a foto
+                Toast.makeText(this, "Publicado! 🎉", Toast.LENGTH_SHORT).show()
                 inputField.text.clear()
                 uriImagemSelecionada = null
                 btnEnviar.isEnabled = true
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Erro ao publicar comentário.", Toast.LENGTH_SHORT).show()
                 btnEnviar.isEnabled = true
+                Toast.makeText(this, "Erro ao guardar.", Toast.LENGTH_SHORT).show()
             }
     }
 }
+
+
