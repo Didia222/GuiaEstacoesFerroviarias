@@ -9,14 +9,12 @@ import android.provider.BaseColumns
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.cursoradapter.widget.CursorAdapter
 import androidx.cursoradapter.widget.SimpleCursorAdapter
-import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -28,11 +26,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import java.text.Normalizer
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -45,12 +39,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
     private val listaMarcadores = mutableListOf<Marker>()
-
-    private val URL_DADOS = "https://gist.githubusercontent.com/Didia222/ce7ecbc46a6eebcb912d47c0741eb02f/raw/estacoes.csv"
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Firebase com Cache Offline
+        db = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        db.firestoreSettings = settings
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -59,131 +59,76 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
 
-        // Atalho para Saneamento (Long Click na barra de pesquisa)
-        findViewById<SearchView>(R.id.searchViewEstacoes).setOnLongClickListener {
-            if (listaEstacoesOficiais.isNotEmpty()) {
-                iniciarSaneamentoDeDados(listaEstacoesOficiais)
-            } else {
-                Toast.makeText(this, "Carrega o mapa primeiro!", Toast.LENGTH_SHORT).show()
-            }
-            true
+        // Verifica se viemos da DetalhesActivity para focar numa estação
+        verificarRetornoDeDetalhes(intent)
+    }
+
+    // Lida com o retorno da DetalhesActivity sem reiniciar a App
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        verificarRetornoDeDetalhes(intent)
+    }
+
+    private fun verificarRetornoDeDetalhes(intent: Intent) {
+        val lat = intent.getDoubleExtra("LAT_RETORNO", 0.0)
+        val lng = intent.getDoubleExtra("LNG_RETORNO", 0.0)
+        if (lat != 0.0 && lng != 0.0) {
+            val localizacao = LatLng(lat, lng)
+            // Espera o mapa carregar se necessário e faz zoom
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(localizacao, 16f))
+            listaMarcadores.find { it.position == localizacao }?.showInfoWindow()
         }
-    }
-
-    private fun configurarPesquisa() {
-        val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
-        val from = arrayOf("estacaoNome")
-        val to = intArrayOf(android.R.id.text1)
-        sugestoesAdapter = SimpleCursorAdapter(
-            this, android.R.layout.simple_list_item_1, null, from, to,
-            CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
-        )
-
-        searchView.suggestionsAdapter = sugestoesAdapter
-        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
-            override fun onSuggestionSelect(position: Int): Boolean = true
-            override fun onSuggestionClick(position: Int): Boolean {
-                val cursor = searchView.suggestionsAdapter.getItem(position) as android.database.Cursor
-                val nomeSelecionado = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
-                searchView.setQuery(nomeSelecionado, true)
-                procurarEstacaoNoMapa(nomeSelecionado)
-                return true
-            }
-        })
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                query?.let { procurarEstacaoNoMapa(it) }
-                return false
-            }
-            override fun onQueryTextChange(newText: String?): Boolean {
-                filtrarSugestoes(newText)
-                return true
-            }
-        })
-    }
-
-    // Única função de normalização para evitar conflitos
-    private fun normalizarTexto(texto: String): String {
-        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
-            .replace(normalizado, "")
-            .replace("-", " ")
-            .replace("\\s+".toRegex(), " ")
-            .trim().uppercase()
     }
 
     private fun carregarDados() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val dao = AppDatabase.getDatabase(applicationContext).estacaoDao()
-            var listaFinal: List<Estacao> = emptyList()
+        db.collection("Estacao").addSnapshotListener { snapshots, error ->
+            if (error != null) return@addSnapshotListener
 
-            try {
-                val client = OkHttpClient()
-                val request = Request.Builder().url(URL_DADOS).build()
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        response.body?.byteStream()?.let { stream ->
-                            val listaOnline = CsvHelper.carregarDeStream(stream)
-                            if (listaOnline.isNotEmpty()) {
-                                dao.limparTudo()
-                                dao.inserirTodas(listaOnline)
-                                listaFinal = listaOnline
-                            }
+            if (snapshots != null) {
+                val listaTemp = mutableListOf<Estacao>()
+                map.clear()
+                listaMarcadores.clear()
+
+                for (document in snapshots) {
+                    val estacao = document.toObject(Estacao::class.java)
+                    if (estacao.latitude != 0.0) {
+                        listaTemp.add(estacao)
+
+                        val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
+
+                        val tipoDetectado = when {
+                            textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
+
+                            // 2. Verifica palavras chave de paragens menores
+                            textoParaAnalise.contains("paragem") ||
+                                    textoParaAnalise.contains("halte") -> "Apeadeiro"
+
+                            // 3. Caso contrário, assume Estação
+                            else -> "Estação Ferroviária"
                         }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Erro: ${e.message}")
-            }
 
-            if (listaFinal.isEmpty()) listaFinal = dao.obterTodas()
-
-            withContext(Dispatchers.Main) {
-                listaEstacoesOficiais = listaFinal
-                todosOsNomesEstacoes = listaFinal.map { it.nome }
-
-                if (listaFinal.isNotEmpty()) {
-                    map.clear()
-                    listaMarcadores.clear()
-                    for (estacao in listaFinal) {
-                        val marker = map.addMarker(
-                            MarkerOptions()
-                                .position(LatLng(estacao.latitude, estacao.longitude))
-                                .title(estacao.nome)
-                                .snippet(estacao.descricao_hist)
-                        )
+                        val marker = map.addMarker(MarkerOptions().position(LatLng(estacao.latitude, estacao.longitude)).title(estacao.nome).snippet(tipoDetectado))
+                        marker?.tag = estacao
                         if (marker != null) listaMarcadores.add(marker)
+
                     }
                 }
+                listaEstacoesOficiais = listaTemp
+                todosOsNomesEstacoes = listaTemp.map { it.nome }
             }
-        }
-    }
-
-    private fun procurarEstacaoNoMapa(nome: String) {
-        val nomeProcurado = normalizarTexto(nome)
-        val marcadorEncontrado = listaMarcadores.find {
-            normalizarTexto(it.title ?: "").contains(nomeProcurado)
-        }
-
-        if (marcadorEncontrado != null) {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(marcadorEncontrado.position, 15f))
-            marcadorEncontrado.showInfoWindow()
-        } else {
-            Toast.makeText(this, "Estação não encontrada.", Toast.LENGTH_SHORT).show()
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.setOnMarkerClickListener(this)
-        val centroPortugal = LatLng(39.3999, -8.2245)
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(centroPortugal, 7f))
-        ativarLocalizacaoUsuario() // Aqui vai pedir permissão e ampliar a câmara
+        ativarLocalizacaoUsuario()
         carregarDados()
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
+        val estacao = marker.tag as? Estacao
         val dialog = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.layout_detalhes_estacao, null)
         dialog.setContentView(view)
@@ -191,35 +136,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         view.findViewById<TextView>(R.id.tvNomeEstacao).text = marker.title
         view.findViewById<TextView>(R.id.tvDescricao).text = marker.snippet
 
-        // 1. Botão História (Ver Mais)
         view.findViewById<Button>(R.id.btnVerMais).setOnClickListener {
-            startActivity(Intent(this, DetalhesActivity::class.java).apply {
+            val intent = Intent(this, DetalhesActivity::class.java).apply {
                 putExtra("NOME", marker.title)
                 putExtra("TIPO", marker.snippet)
-            })
+                putExtra("HISTORIA", estacao?.Discricao_hist)
+                putExtra("LATITUDE", estacao?.latitude ?: 0.0)
+                putExtra("LONGITUDE", estacao?.longitude ?: 0.0)
+            }
+            startActivity(intent)
             dialog.dismiss()
         }
 
-        // 2. Botão Horários
         view.findViewById<Button>(R.id.btnVerHorarios).setOnClickListener {
             startActivity(Intent(this, HorariosActivity::class.java).apply {
                 putExtra("ESTACAO_NOME", marker.title)
-            })
-            dialog.dismiss()
-        }
-
-        // 3. Botão Galeria
-        view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
-            startActivity(Intent(this, GaleriaActivity::class.java).apply {
-                putExtra("NOME", marker.title)
-            })
-            dialog.dismiss()
-        }
-
-        // 4. Botão Avaliar (Requisito Estrelas)
-        view.findViewById<Button>(R.id.btnAvaliar).setOnClickListener {
-            startActivity(Intent(this, AvaliacaoActivity::class.java).apply {
-                putExtra("NOME", marker.title)
             })
             dialog.dismiss()
         }
@@ -228,56 +159,47 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         return true
     }
 
-    private fun iniciarSaneamentoDeDados(estacoesOficiais: List<Estacao>) {
-        val db = FirebaseFirestore.getInstance()
-        val nomesOficiaisSet = estacoesOficiais.map { normalizarTexto(it.nome) }.toSet()
+    // --- Auxiliares GPS e Pesquisa ---
 
-        db.collection("comboios").get().addOnSuccessListener { documents ->
-            var comboiosLimpas = 0
-            for (document in documents) {
-                val comboio = document.toObject(Comboio::class.java)
-                val paragensOriginais = comboio.paragens
-                val paragensValidas = paragensOriginais.filter {
-                    nomesOficiaisSet.contains(normalizarTexto(it.estacao))
-                }
-
-                if (paragensValidas.size != paragensOriginais.size) {
-                    comboiosLimpas++
-                    db.collection("comboios").document(document.id).update("paragens", paragensValidas)
-                }
-            }
-            Toast.makeText(this, "Saneamento concluído: $comboiosLimpas corrigidos.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // CORRIGIDO: Agora a câmara amplia para o utilizador ao iniciar
     private fun ativarLocalizacaoUsuario() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             map.isMyLocationEnabled = true
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 12f))
-                }
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                loc?.let { map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 12f)) }
             }
         } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            ativarLocalizacaoUsuario()
-        }
+    private fun normalizarTexto(t: String): String {
+        return Normalizer.normalize(t, Normalizer.Form.NFD).replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "").uppercase().trim()
+    }
+
+    private fun configurarPesquisa() {
+        val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
+        sugestoesAdapter = SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, arrayOf("estacaoNome"), intArrayOf(android.R.id.text1), CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER)
+        searchView.suggestionsAdapter = sugestoesAdapter
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(q: String?): Boolean { q?.let { procurarEstacaoNoMapa(it) }; return false }
+            override fun onQueryTextChange(n: String?): Boolean { filtrarSugestoes(n); return true }
+        })
     }
 
     private fun filtrarSugestoes(query: String?) {
         val cursor = MatrixCursor(arrayOf(BaseColumns._ID, "estacaoNome"))
         if (!query.isNullOrBlank()) {
-            val queryLimpa = normalizarTexto(query)
-            val sugestoes = todosOsNomesEstacoes.filter { normalizarTexto(it).contains(queryLimpa) }
-            sugestoes.forEachIndexed { index, nome -> cursor.addRow(arrayOf(index, nome)) }
+            val q = normalizarTexto(query)
+            todosOsNomesEstacoes.filter { normalizarTexto(it).contains(q) }.forEachIndexed { i, nome -> cursor.addRow(arrayOf(i, nome)) }
         }
         sugestoesAdapter.changeCursor(cursor)
+    }
+
+    private fun procurarEstacaoNoMapa(nome: String) {
+        val q = normalizarTexto(nome)
+        listaMarcadores.find { normalizarTexto(it.title ?: "").contains(q) }?.let {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position, 15f))
+            it.showInfoWindow()
+        }
     }
 }

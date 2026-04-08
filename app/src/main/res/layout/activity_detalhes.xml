@@ -159,6 +159,83 @@
                     app:layout_constraintTop_toBottomOf="@id/llHistoriaLabel"
                     tools:text="A Estação de São Bento é um dos maiores ícones..." />
 
+                <View
+                    android:id="@+id/linhaSeparadora"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="32dp"
+                    android:background="#E0E0E0"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintBottom_toBottomOf="@id/tvConteudoDetalhe" />
+
+                <TextView
+                    android:id="@+id/tvLabelComentarios"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="💬  Comentários e Fotos"
+                    android:textColor="#424242"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/linhaSeparadora" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvComentarios"
+                    android:layout_width="0dp"
+                    android:layout_height="300dp"
+                    android:layout_marginTop="16dp"
+                    android:nestedScrollingEnabled="false"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvLabelComentarios" />
+
+                <LinearLayout
+                    android:id="@+id/llBarraComentario"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="#EEEEEE"
+                    android:gravity="center_horizontal"
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rvComentarios" >
+
+                    <ImageButton
+                        android:id="@+id/btnTirarFoto"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Tirar Foto"
+                        android:src="@android:drawable/ic_menu_camera"
+                        app:tint="#555555" />
+
+                    <EditText
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:hint="Adiciona um comentário ou foto..."
+                        android:maxLines="3"
+                        android:padding="8dp"
+                        android:textSize="14sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnEnviarComentario"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Enviar"
+                        android:src="@android:drawable/ic_menu_send"
+                        app:tint="#0D47A1" />
+
+                </LinearLayout>
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </ScrollView>
     </androidx.cardview.widget.CardView>

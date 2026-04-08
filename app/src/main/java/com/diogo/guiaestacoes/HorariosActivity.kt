@@ -1,6 +1,7 @@
 package com.diogo.guiaestacoes
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -20,7 +21,7 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var etNumeroComboio: EditText
     private lateinit var btnPesquisar: Button
     private var nomeEstacaoGlobal: String = ""
-    private var textoPesquisado: String = "" // AQUI: Variável para guardar o destino pesquisado!
+    private var textoPesquisado: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +32,6 @@ class HorariosActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.navigationIcon?.setTint(android.graphics.Color.WHITE)
 
-        // Ajuste para a câmara (notch) não tapar a barra
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->
             val statusBar = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             view.setPadding(0, statusBar.top, 0, 0)
@@ -55,81 +55,67 @@ class HorariosActivity : AppCompatActivity() {
 
         btnPesquisar.setOnClickListener {
             val texto = etNumeroComboio.text.toString().trim()
-            textoPesquisado = texto // AQUI: Guarda o destino sempre que o utilizador clica em pesquisar
+            textoPesquisado = texto
             if (texto.isNotEmpty()) pesquisarSmarter(texto)
             else pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
         }
     }
 
-    // FUNÇÃO MELHORADA: Remove acentos, hífens e espaços extra (ex: "Porto - São Bento" vira "Porto Sao Bento")
     private fun limparTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
         val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
-        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim()
+        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
     }
 
-    // Vai ao firebase recolher informação apenas dos comboios que fazem paragem na estação selecionada
     private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
-        val estacaoProcuradaLimpa = limparTexto(nomeEstacao)
-        textoPesquisado = "" // AQUI: Se não há pesquisa, limpa a variável de destino
+        val nomeLimpoBusca = limparTexto(nomeEstacao)
 
-        db.collection("comboios").get().addOnSuccessListener { documents ->
-            val lista = mutableListOf<Comboio>()
+        db.collection("Comboio").get().addOnSuccessListener { documents ->
+            val listaFiltrada = mutableListOf<Comboio>()
             for (document in documents) {
-                val comboio = document.toObject(Comboio::class.java)
+                try {
+                    val comboio = document.toObject(Comboio::class.java)
+                    val paraNestaEstacao = comboio.paragens.any {
+                        limparTexto(it.estacao).contains(nomeLimpoBusca) || nomeLimpoBusca.contains(limparTexto(it.estacao))
+                    }
 
-                // Verifica cruzada: o mapa tem o nome do Firebase OU o Firebase tem o nome do mapa
-                val passaNestaEstacao = comboio.paragens.any { paragem ->
-                    val nomeParagemLimpo = limparTexto(paragem.estacao)
-                    nomeParagemLimpo.contains(estacaoProcuradaLimpa, ignoreCase = true) ||
-                            estacaoProcuradaLimpa.contains(nomeParagemLimpo, ignoreCase = true)
-                }
-
-                if (passaNestaEstacao) {
-                    lista.add(comboio)
+                    if (paraNestaEstacao) {
+                        listaFiltrada.add(comboio)
+                    }
+                } catch (e: Exception) {
+                    Log.e("HorariosActivity", "Erro ao converter: ${e.message}")
                 }
             }
-            if (lista.isEmpty()) Toast.makeText(this, "Sem comboios para esta estação", Toast.LENGTH_SHORT).show()
-            exibirResultados(lista)
-        }.addOnFailureListener {
-            Toast.makeText(this, "Erro ao ligar ao Firebase: ${it.message}", Toast.LENGTH_LONG).show()
+            exibirResultados(listaFiltrada)
+        }.addOnFailureListener { e ->
+            Log.e("HorariosActivity", "Erro Firebase", e)
+            Toast.makeText(this, "Erro ao carregar dados", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Verificador flexivel que identifica os comboios da paragem nao só pelo nome mas sim pelo seu numero, destino ou se é de umas paragens pelo meio
     private fun pesquisarSmarter(texto: String) {
         val textoLimpo = limparTexto(texto)
         val estacaoAtualLimpa = limparTexto(nomeEstacaoGlobal)
 
-        db.collection("comboios").get().addOnSuccessListener { documents ->
+        db.collection("Comboio").get().addOnSuccessListener { documents ->
             val resultados = mutableListOf<Comboio>()
 
             for (document in documents) {
                 val comboio = document.toObject(Comboio::class.java)
-
-                // 1. Descobrir a POSIÇÃO (índice) em que o comboio passa na nossa estação (ex: Penafiel)
                 val indexNossaEstacao = comboio.paragens.indexOfFirst {
                     val nomeLimpo = limparTexto(it.estacao)
-                    nomeLimpo.contains(estacaoAtualLimpa, true) || estacaoAtualLimpa.contains(nomeLimpo, true)
+                    nomeLimpo.contains(estacaoAtualLimpa) || estacaoAtualLimpa.contains(nomeLimpo)
                 }
 
-                // Se não passa na nossa estação (devolve -1), ignoramos logo este comboio
                 if (indexNossaEstacao == -1) continue
 
-                // 2. Verifica se o texto pesquisado é o NÚMERO do comboio
                 val matchNumero = comboio.numero.contains(textoLimpo, true)
-
-                // 3. A NOVA REGRA DE OURO (O Sentido da Viagem):
-                // Procura se a estação pesquisada (ex: Porto) existe e se fica DEPOIS da nossa estação
                 val sentidoCorreto = comboio.paragens.withIndex().any { (index, paragem) ->
                     val nomeParagemLimpo = limparTexto(paragem.estacao)
-                    val correspondePesquisa = nomeParagemLimpo.contains(textoLimpo, true) || textoLimpo.contains(nomeParagemLimpo, true)
-
-                    // Só é válido se corresponder ao texto pesquisado E a paragem for mais à frente (index > indexNossaEstacao)
+                    val correspondePesquisa = nomeParagemLimpo.contains(textoLimpo) || textoLimpo.contains(nomeParagemLimpo)
                     correspondePesquisa && index > indexNossaEstacao
                 }
 
-                // Se o utilizador pesquisou pelo número ou se a direção está correta, mostramos o comboio!
                 if (matchNumero || sentidoCorreto) {
                     resultados.add(comboio)
                 }
@@ -138,7 +124,6 @@ class HorariosActivity : AppCompatActivity() {
         }
     }
 
-    //O "Arrumador": Pega nos comboios desorganizados que vêm do Firebase, agrupa-os por categoria (ex: Urbanos, AP) e ordena-os pela hora mais cedo.
     private fun exibirResultados(lista: List<Comboio>) {
         val listaExibicao = mutableListOf<Any>()
         val grupos = lista.groupBy { it.tipo }
@@ -149,13 +134,16 @@ class HorariosActivity : AppCompatActivity() {
             listaExibicao.addAll(comboios.sortedBy { c ->
                 c.paragens.find {
                     val nomeParagem = limparTexto(it.estacao)
-                    nomeParagem.contains(estacaoGlobalLimpa, true) || estacaoGlobalLimpa.contains(nomeParagem, true)
+                    nomeParagem.contains(estacaoGlobalLimpa) || estacaoGlobalLimpa.contains(nomeParagem)
                 }?.hora
             })
         }
 
-        // AQUI ESTAVA O SEGREDO: Envias agora o textoPesquisado para o adaptador!
         adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal, textoPesquisado)
+        
+        if (lista.isEmpty()) {
+            Toast.makeText(this, "Nenhum comboio encontrado.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

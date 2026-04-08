@@ -1,121 +1,175 @@
 package com.diogo.guiaestacoes
 
+import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.Normalizer
+import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 class DetalhesActivity : AppCompatActivity() {
 
-    private val db = FirebaseFirestore.getInstance()
-    private var historiaExpandida = false // Estado da seta (Aberto/Fechado)
-    private var textoHistoriaAtual = "A história desta estação ainda não foi catalogada." // Guardar para partilhar
+    private var isExpanded = false
+    private var uriImagemSelecionada: Uri? = null
+
+    // Variáveis do Firebase
+    private lateinit var db: FirebaseFirestore
+    private lateinit var storage: FirebaseStorage
+
+    // Variáveis da Estação
+    private var nomeEstacao: String = ""
+
+    // Lançador para abrir a Galeria
+    private val selecionarImagemLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data: Intent? = result.data
+            uriImagemSelecionada = data?.data
+            if (uriImagemSelecionada != null) {
+                Toast.makeText(this, "Foto selecionada com sucesso! 📷", Toast.LENGTH_SHORT).show()
+                // Aqui poderíamos mudar a cor do botão ou mostrar um mini-preview
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalhes)
 
-        // 1. Ligar as variáveis aos elementos do ecrã
-        val toolbar = findViewById<Toolbar>(R.id.toolbarDetalhes)
+        // Inicializar Firebase
+        db = FirebaseFirestore.getInstance()
+        storage = FirebaseStorage.getInstance()
+
+        // Receber dados da MainActivity
+        nomeEstacao = intent.getStringExtra("NOME") ?: ""
+        val tipo = intent.getStringExtra("TIPO") ?: ""
+        val historia = intent.getStringExtra("HISTORIA") ?: ""
+        val lat = intent.getDoubleExtra("LATITUDE", 0.0)
+        val lng = intent.getDoubleExtra("LONGITUDE", 0.0)
+
+        // Configurar Interface da História
         val tvTitulo = findViewById<TextView>(R.id.tvTituloDetalhe)
         val tvTipo = findViewById<TextView>(R.id.tvTipoDetalhe)
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
         val btnExpandir = findViewById<ImageButton>(R.id.btnExpandirHistoria)
-        val llHistoriaLabel = findViewById<View>(R.id.llHistoriaLabel)
+        val btnVerNoMapa = findViewById<MaterialButton>(R.id.btnMapaDetalhe)
 
-        // Os nossos botões novos!
-        val btnMapa = findViewById<MaterialButton>(R.id.btnMapaDetalhe)
-        val btnPartilhar = findViewById<MaterialButton>(R.id.btnPartilharDetalhe)
-
-        // 2. Configurar a Seta de Voltar atrás
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = ""
-        toolbar.navigationIcon?.setTint(Color.WHITE)
-
-        // Engenharia Anti-Notch para empurrar a seta para baixo
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->
-            val statusBar = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            view.setPadding(0, statusBar.top, 0, 0)
-            insets
-        }
-
-        // 3. Receber dados da janela anterior
-        val nome = intent.getStringExtra("NOME") ?: "Estação Desconhecida"
-        val tipo = intent.getStringExtra("TIPO") ?: ""
-
-        tvTitulo.text = nome
+        tvTitulo.text = nomeEstacao
         tvTipo.text = tipo
-        tvConteudo.text = "A viajar no tempo..."
+        tvConteudo.text = historia
 
-        // 4. Ligar ao Firebase para ler a História
-        val idDocumento = limparTexto(nome)
-
-        db.collection("historias").document(idDocumento).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val resumo = document.getString("resumo") ?: ""
-                    tvConteudo.text = resumo
-                    textoHistoriaAtual = resumo // Guardamos para o botão de partilhar!
-                } else {
-                    tvConteudo.text = textoHistoriaAtual
-                }
+        // Botão Ver no Mapa
+        btnVerNoMapa.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java).apply {
+                putExtra("LAT_RETORNO", lat)
+                putExtra("LNG_RETORNO", lng)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
-            .addOnFailureListener {
-                tvConteudo.text = "Erro de ligação. Verifica a internet."
-            }
-
-        // 5. O Botão da Seta Expansível
-        llHistoriaLabel.setOnClickListener {
-            historiaExpandida = !historiaExpandida
-
-            if (historiaExpandida) {
-                // Expandir o texto completamente
-                tvConteudo.maxLines = Integer.MAX_VALUE
-                btnExpandir.setImageResource(R.drawable.ic_expand_less)
-            } else {
-                // Cortar o texto de novo (tesourão a 4 linhas)
-                tvConteudo.maxLines = 4
-                btnExpandir.setImageResource(R.drawable.ic_expand_more)
-            }
-        }
-
-        // 6. O Botão "Ver Mapa" (Volta ao Ecrã Principal)
-        btnMapa.setOnClickListener {
-            // Como a MainActivity do mapa já lá está atrás, basta fechar este ecrã de detalhes
+            startActivity(intent)
             finish()
         }
 
-        // 7. O Botão "Partilhar"
-        btnPartilhar.setOnClickListener {
-            val textoPartilha = "Olha que interessante a história da $nome:\n\n$textoHistoriaAtual\n\nPartilhado via App Guia Estações"
+        // Botão Expandir História
+        btnExpandir.setOnClickListener {
+            if (isExpanded) {
+                tvConteudo.maxLines = 4
+                btnExpandir.setImageResource(R.drawable.ic_expand_more)
+            } else {
+                tvConteudo.maxLines = Integer.MAX_VALUE
+                btnExpandir.setImageResource(R.drawable.ic_expand_less) // Opcional: cria um ícone ic_expand_less
+            }
+            isExpanded = !isExpanded
+        }
 
-            val intentPartilha = Intent(Intent.ACTION_SEND)
-            intentPartilha.type = "text/plain"
-            intentPartilha.putExtra(Intent.EXTRA_TEXT, textoPartilha)
+        // --- LÓGICA DOS COMENTÁRIOS E FOTOS ---
 
-            // Abre a gaveta nativa do Android a perguntar onde queres partilhar (WhatsApp, SMS, etc)
-            startActivity(Intent.createChooser(intentPartilha, "Partilhar história em..."))
+        val btnTirarFoto = findViewById<ImageButton>(R.id.btnTirarFoto)
+        val btnEnviarComentario = findViewById<ImageButton>(R.id.btnEnviarComentario)
+        val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
+
+        // 1. Abrir Galeria
+        btnTirarFoto.setOnClickListener {
+            abrirGaleria()
+        }
+
+        // 2. Enviar Comentário
+        btnEnviarComentario.setOnClickListener {
+            val textoComentario = etNovoComentario.text.toString().trim()
+
+            if (textoComentario.isEmpty() && uriImagemSelecionada == null) {
+                Toast.makeText(this, "Escreve algo ou escolhe uma foto!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Desativar botão para não enviar 2 vezes
+            btnEnviarComentario.isEnabled = false
+            Toast.makeText(this, "A enviar... ⏳", Toast.LENGTH_SHORT).show()
+
+            if (uriImagemSelecionada != null) {
+                // Tem foto: Fazer upload primeiro
+                fazerUploadImagemEGuardarComentario(textoComentario, etNovoComentario, btnEnviarComentario)
+            } else {
+                // Não tem foto: Guardar só o texto diretamente
+                guardarComentarioNoFirestore(textoComentario, "", etNovoComentario, btnEnviarComentario)
+            }
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressedDispatcher.onBackPressed()
-        return true
+    private fun abrirGaleria() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        selecionarImagemLauncher.launch(intent)
     }
 
-    private fun limparTexto(texto: String): String {
-        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        val semAcentos = "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "")
-        return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
+    private fun fazerUploadImagemEGuardarComentario(texto: String, inputField: EditText, btnEnviar: ImageButton) {
+        val fileName = UUID.randomUUID().toString() + ".jpg" // Nome único para a foto
+        val refStorage = storage.reference.child("fotos_estacoes/$fileName")
+
+        refStorage.putFile(uriImagemSelecionada!!)
+            .addOnSuccessListener {
+                // Upload com sucesso! Agora vamos pedir o link público
+                refStorage.downloadUrl.addOnSuccessListener { uri ->
+                    val urlDaFoto = uri.toString()
+                    guardarComentarioNoFirestore(texto, urlDaFoto, inputField, btnEnviar)
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Erro ao enviar foto: ${e.message}", Toast.LENGTH_LONG).show()
+                btnEnviar.isEnabled = true
+            }
+    }
+
+    private fun guardarComentarioNoFirestore(texto: String, urlFoto: String, inputField: EditText, btnEnviar: ImageButton) {
+        // Criar o objeto usando o nosso "molde"
+        val idComentarioGerado = db.collection("Comentarios").document().id
+        val novoComentario = Comentario(
+            id_comentario = idComentarioGerado,
+            id_estacao = nomeEstacao,
+            autor = "Viajante Anónimo",
+            texto = texto,
+            url_foto = urlFoto
+        )
+
+        db.collection("Comentarios").document(idComentarioGerado)
+            .set(novoComentario)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Comentário publicado! 🎉", Toast.LENGTH_SHORT).show()
+                // Limpar o campo e a foto
+                inputField.text.clear()
+                uriImagemSelecionada = null
+                btnEnviar.isEnabled = true
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Erro ao publicar comentário.", Toast.LENGTH_SHORT).show()
+                btnEnviar.isEnabled = true
+            }
     }
 }

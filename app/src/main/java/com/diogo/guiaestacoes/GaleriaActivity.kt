@@ -1,15 +1,12 @@
 package com.diogo.guiaestacoes
 
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
@@ -17,40 +14,51 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import java.text.Normalizer
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.UUID
 
-// Modelo para os Comentários
+// --- 1. MODELOS DE DADOS (Estrutura Exata da Base de Dados) ---
+
 data class Comentario(
-    val texto: String = "",
-    val estacaoId: String = "",
-    val timestamp: Long = 0L
+    val conteudo: String = "",
+    val data_hora: Long = 0L,
+    val id_comentario: String = "",
+    val id_estacao: String = "",
+    val nome_autor: String = ""
 )
 
-// Modelo para as Fotos
 data class FotoEstacao(
-    val url: String = "",
-    val estacaoId: String = ""
+    val ano: Long = 2024L, // O "L" garante que o Firebase guarda como int64
+    val caminho_ficheiro: String = "",
+    val estacao_id: String = "",
+    val id_foto: String = "",
+    val legenda: String = ""
 )
+
+// --- 2. ACTIVITY PRINCIPAL ---
 
 class GaleriaActivity : AppCompatActivity() {
 
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private lateinit var idEstacaoLimpo: String
 
     private val listaFotos = mutableListOf<String>()
-    private lateinit var adapterFotos: FotoAdapter
+    private lateinit var adapterFotos: FotoAdapter // Agora usa o ficheiro separado!
 
     private val listaComentarios = mutableListOf<Comentario>()
-    private lateinit var adapterComentarios: ComentarioAdapter
+    private lateinit var adapterComentarios: ComentarioAdapter // Agora usa o ficheiro separado!
+
+    // Lançador para escolher a imagem da galeria do telemóvel
+    private val escolherImagemLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            fazerUploadDaImagem(uri)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,32 +67,32 @@ class GaleriaActivity : AppCompatActivity() {
         val nomeEstacao = intent.getStringExtra("NOME") ?: "Estação"
         idEstacaoLimpo = limparTexto(nomeEstacao)
 
-        // Configurar UI
+        // Configurar UI da Toolbar
         val toolbar = findViewById<Toolbar>(R.id.toolbarGaleria)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Galeria de $nomeEstacao"
+        toolbar.navigationIcon?.setTint(Color.BLACK)
 
-        // Ajuste para o Notch
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             v.setPadding(0, statusBars.top, 0, 0)
             insets
         }
 
-        // 1. Configurar Grelha de Fotos (RecyclerView Superior)
+        // Configurar Grelha de Fotos (RecyclerView)
         val rvFotos = findViewById<RecyclerView>(R.id.rvFotos)
-        rvFotos.layoutManager = GridLayoutManager(this, 2) // 2 colunas como no protótipo
+        rvFotos.layoutManager = GridLayoutManager(this, 2)
         adapterFotos = FotoAdapter(listaFotos)
         rvFotos.adapter = adapterFotos
 
-        // 2. Configurar Lista de Comentários (RecyclerView Inferior)
+        // Configurar Lista de Comentários (RecyclerView)
         val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.adapter = adapterComentarios
 
-        // 3. Lógica do Botão Enviar Comentário
+        // Botão Enviar Comentário
         val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
         findViewById<ImageButton>(R.id.btnEnviarComentario).setOnClickListener {
             val texto = etNovoComentario.text.toString().trim()
@@ -94,9 +102,9 @@ class GaleriaActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Lógica do Botão Adicionar Foto (FAB)
+        // Botão Adicionar Foto (Abre a galeria)
         findViewById<FloatingActionButton>(R.id.fabAdicionarFoto).setOnClickListener {
-            Toast.makeText(this, "Funcionalidade de Upload em breve!", Toast.LENGTH_LONG).show()
+            escolherImagemLauncher.launch("image/*")
         }
 
         // Iniciar escuta de dados em tempo real
@@ -104,17 +112,63 @@ class GaleriaActivity : AppCompatActivity() {
         carregarComentariosDoFirebase()
     }
 
+    // --- FUNÇÕES DE FOTOS E STORAGE ---
+
+    private fun fazerUploadDaImagem(uri: Uri) {
+        Toast.makeText(this, "A fazer upload da foto...", Toast.LENGTH_SHORT).show()
+
+        val nomeFicheiro = "${UUID.randomUUID()}.jpg"
+        val referenciaStorage = storage.reference.child("fotos_estacoes/${idEstacaoLimpo}/${nomeFicheiro}")
+
+        // 1. Envia a foto para o Firebase Storage
+        referenciaStorage.putFile(uri)
+            .addOnSuccessListener {
+                // 2. Obtém o URL público da imagem
+                referenciaStorage.downloadUrl.addOnSuccessListener { urlDownload ->
+                    guardarFotoNoFirestore(urlDownload.toString())
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Erro ao enviar a imagem.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun guardarFotoNoFirestore(url: String) {
+        // Gera o ID único da foto
+        val novoIdFoto = db.collection("fotos_estacoes").document().id
+
+        // Preenche com o modelo exato que pediste
+        val novaFoto = FotoEstacao(
+            ano = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR).toLong(),
+            caminho_ficheiro = url,
+            estacao_id = idEstacaoLimpo,
+            id_foto = novoIdFoto,
+            legenda = "Adicionada via aplicação"
+        )
+
+        db.collection("fotos_estacoes").document(novoIdFoto).set(novaFoto)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Foto adicionada à galeria!", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Erro ao guardar foto.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     private fun carregarFotosDoFirebase() {
         db.collection("fotos_estacoes")
-            .whereEqualTo("estacaoId", idEstacaoLimpo)
+            .whereEqualTo("estacao_id", idEstacaoLimpo)
             .addSnapshotListener { snapshots, _ ->
                 if (snapshots == null) return@addSnapshotListener
                 listaFotos.clear()
                 for (doc in snapshots) {
                     val foto = doc.toObject(FotoEstacao::class.java)
-                    if (foto.url.isNotEmpty()) listaFotos.add(foto.url)
+                    if (foto.caminho_ficheiro.isNotEmpty()) {
+                        listaFotos.add(foto.caminho_ficheiro)
+                    }
                 }
-                // Foto padrão se estiver vazio para não ficar feio
+
+                // Imagem de placeholder se a estação ainda não tiver fotos
                 if (listaFotos.isEmpty()) {
                     listaFotos.add("https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?w=500")
                 }
@@ -122,10 +176,12 @@ class GaleriaActivity : AppCompatActivity() {
             }
     }
 
+    // --- FUNÇÕES DE COMENTÁRIOS ---
+
     private fun carregarComentariosDoFirebase() {
         db.collection("comentarios")
-            .whereEqualTo("estacaoId", idEstacaoLimpo)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .whereEqualTo("id_estacao", idEstacaoLimpo)
+            .orderBy("data_hora", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, _ ->
                 if (snapshots == null) return@addSnapshotListener
                 listaComentarios.clear()
@@ -137,12 +193,26 @@ class GaleriaActivity : AppCompatActivity() {
     }
 
     private fun enviarComentarioParaFirebase(texto: String) {
-        val novo = Comentario(texto, idEstacaoLimpo, System.currentTimeMillis())
-        db.collection("comentarios").add(novo)
+        val novoIdComentario = db.collection("comentarios").document().id
+
+        val novoComentario = Comentario(
+            conteudo = texto,
+            data_hora = System.currentTimeMillis(),
+            id_comentario = novoIdComentario,
+            id_estacao = idEstacaoLimpo,
+            nome_autor = "Viajante" // Nome por defeito
+        )
+
+        db.collection("comentarios").document(novoIdComentario).set(novoComentario)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Comentário enviado!", Toast.LENGTH_SHORT).show()
+            }
             .addOnFailureListener {
-                Toast.makeText(this, "Erro ao comentar.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Erro ao enviar comentário.", Toast.LENGTH_SHORT).show()
             }
     }
+
+    // --- UTILITÁRIOS ---
 
     private fun limparTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
@@ -154,33 +224,5 @@ class GaleriaActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
-    }
-
-    // --- ADAPTERS INTERNOS ---
-
-    inner class FotoAdapter(private val urls: List<String>) : RecyclerView.Adapter<FotoAdapter.VH>() {
-        inner class VH(v: View) : RecyclerView.ViewHolder(v) { val img: ImageView = v as ImageView }
-        override fun onCreateViewHolder(p: ViewGroup, t: Int) = VH(ImageView(p.context).apply {
-            layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 450).apply { setMargins(8, 8, 8, 8) }
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        })
-        override fun onBindViewHolder(h: VH, p: Int) {
-            Glide.with(h.itemView).load(urls[p]).transform(CenterCrop(), RoundedCorners(32)).into(h.img)
-        }
-        override fun getItemCount() = urls.size
-    }
-
-    inner class ComentarioAdapter(private val list: List<Comentario>) : RecyclerView.Adapter<ComentarioAdapter.VH>() {
-        inner class VH(v: View) : RecyclerView.ViewHolder(v) {
-            val txt: TextView = v.findViewById(android.R.id.text1)
-            val sub: TextView = v.findViewById(android.R.id.text2)
-        }
-        override fun onCreateViewHolder(p: ViewGroup, t: Int) = VH(LayoutInflater.from(p.context).inflate(android.R.layout.simple_list_item_2, p, false))
-        override fun onBindViewHolder(h: VH, p: Int) {
-            h.txt.text = list[p].texto
-            val data = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(list[p].timestamp))
-            h.sub.text = data
-        }
-        override fun getItemCount() = list.size
     }
 }
