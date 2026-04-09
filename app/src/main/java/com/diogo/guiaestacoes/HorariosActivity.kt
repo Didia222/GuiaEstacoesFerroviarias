@@ -2,10 +2,9 @@ package com.diogo.guiaestacoes
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,10 +17,12 @@ class HorariosActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ComboioAdapter
-    private lateinit var etNumeroComboio: EditText
-    private lateinit var btnPesquisar: Button
+    private lateinit var svPesquisaHorarios: SearchView
     private var nomeEstacaoGlobal: String = ""
     private var textoPesquisado: String = ""
+
+    // Vamos guardar os comboios originais aqui para não termos de pedir à net cada vez que escreves uma letra!
+    private var todosOsComboiosDaEstacao = listOf<Comboio>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,23 +43,33 @@ class HorariosActivity : AppCompatActivity() {
         supportActionBar?.title = "Horários: $nomeEstacaoGlobal"
 
         recyclerView = findViewById(R.id.recyclerViewHorarios)
-        etNumeroComboio = findViewById(R.id.etNumeroComboio)
-        btnPesquisar = findViewById(R.id.btnPesquisar)
+        svPesquisaHorarios = findViewById(R.id.svPesquisaHorarios)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ComboioAdapter(emptyList(), nomeEstacaoGlobal)
         recyclerView.adapter = adapter
 
+        // 1. Primeiro vamos buscar TODOS os comboios que passam nesta estação
         if (nomeEstacaoGlobal.isNotEmpty()) {
-            pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
+            carregarComboiosIniciais(nomeEstacaoGlobal)
         }
 
-        btnPesquisar.setOnClickListener {
-            val texto = etNumeroComboio.text.toString().trim()
-            textoPesquisado = texto
-            if (texto.isNotEmpty()) pesquisarSmarter(texto)
-            else pesquisarComboiosDaEstacao(nomeEstacaoGlobal)
-        }
+        // 2. Configurar a barra de pesquisa para filtrar em tempo real
+        svPesquisaHorarios.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                // Quando o utilizador clica no "Enter" no teclado
+                svPesquisaHorarios.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                // Quando o utilizador escreve ou apaga qualquer letra!
+                val texto = newText?.trim() ?: ""
+                textoPesquisado = texto
+                filtrarListaNaMemoria(texto)
+                return true
+            }
+        })
     }
 
     private fun limparTexto(texto: String): String {
@@ -67,7 +78,7 @@ class HorariosActivity : AppCompatActivity() {
         return semAcentos.replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
     }
 
-    private fun pesquisarComboiosDaEstacao(nomeEstacao: String) {
+    private fun carregarComboiosIniciais(nomeEstacao: String) {
         val nomeLimpoBusca = limparTexto(nomeEstacao)
 
         db.collection("Comboio").get().addOnSuccessListener { documents ->
@@ -75,6 +86,7 @@ class HorariosActivity : AppCompatActivity() {
             for (document in documents) {
                 try {
                     val comboio = document.toObject(Comboio::class.java)
+                    // Verifica se o comboio para nesta estação
                     val paraNestaEstacao = comboio.paragens.any {
                         limparTexto(it.estacao).contains(nomeLimpoBusca) || nomeLimpoBusca.contains(limparTexto(it.estacao))
                     }
@@ -86,42 +98,53 @@ class HorariosActivity : AppCompatActivity() {
                     Log.e("HorariosActivity", "Erro ao converter: ${e.message}")
                 }
             }
-            exibirResultados(listaFiltrada)
+
+            // Guardamos a lista completa para podermos filtrar super rápido
+            todosOsComboiosDaEstacao = listaFiltrada
+            exibirResultados(todosOsComboiosDaEstacao)
+
         }.addOnFailureListener { e ->
             Log.e("HorariosActivity", "Erro Firebase", e)
             Toast.makeText(this, "Erro ao carregar dados", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun pesquisarSmarter(texto: String) {
+    // Esta função é nova! É muito mais rápida porque pesquisa diretamente na lista que já sacámos do Firebase.
+    private fun filtrarListaNaMemoria(texto: String) {
+        if (texto.isEmpty()) {
+            exibirResultados(todosOsComboiosDaEstacao)
+            return
+        }
+
         val textoLimpo = limparTexto(texto)
         val estacaoAtualLimpa = limparTexto(nomeEstacaoGlobal)
+        val resultados = mutableListOf<Comboio>()
 
-        db.collection("Comboio").get().addOnSuccessListener { documents ->
-            val resultados = mutableListOf<Comboio>()
-
-            for (document in documents) {
-                val comboio = document.toObject(Comboio::class.java)
-                val indexNossaEstacao = comboio.paragens.indexOfFirst {
-                    val nomeLimpo = limparTexto(it.estacao)
-                    nomeLimpo.contains(estacaoAtualLimpa) || estacaoAtualLimpa.contains(nomeLimpo)
-                }
-
-                if (indexNossaEstacao == -1) continue
-
-                val matchNumero = comboio.numero.contains(textoLimpo, true)
-                val sentidoCorreto = comboio.paragens.withIndex().any { (index, paragem) ->
-                    val nomeParagemLimpo = limparTexto(paragem.estacao)
-                    val correspondePesquisa = nomeParagemLimpo.contains(textoLimpo) || textoLimpo.contains(nomeParagemLimpo)
-                    correspondePesquisa && index > indexNossaEstacao
-                }
-
-                if (matchNumero || sentidoCorreto) {
-                    resultados.add(comboio)
-                }
+        for (comboio in todosOsComboiosDaEstacao) {
+            // Em que número da lista de paragens está a nossa estação?
+            val indexNossaEstacao = comboio.paragens.indexOfFirst {
+                val nomeLimpo = limparTexto(it.estacao)
+                nomeLimpo.contains(estacaoAtualLimpa) || estacaoAtualLimpa.contains(nomeLimpo)
             }
-            exibirResultados(resultados)
+
+            if (indexNossaEstacao == -1) continue
+
+            // Verifica se o que a pessoa escreveu é o NÚMERO do comboio
+            val matchNumero = comboio.numero.contains(textoLimpo, true)
+
+            // Verifica se o que a pessoa escreveu é o DESTINO (uma paragem que venha DEPOIS da nossa)
+            val sentidoCorreto = comboio.paragens.withIndex().any { (index, paragem) ->
+                val nomeParagemLimpo = limparTexto(paragem.estacao)
+                val correspondePesquisa = nomeParagemLimpo.contains(textoLimpo) || textoLimpo.contains(nomeParagemLimpo)
+                correspondePesquisa && index > indexNossaEstacao
+            }
+
+            if (matchNumero || sentidoCorreto) {
+                resultados.add(comboio)
+            }
         }
+
+        exibirResultados(resultados)
     }
 
     private fun exibirResultados(lista: List<Comboio>) {
@@ -140,10 +163,6 @@ class HorariosActivity : AppCompatActivity() {
         }
 
         adapter.atualizarLista(listaExibicao, nomeEstacaoGlobal, textoPesquisado)
-        
-        if (lista.isEmpty()) {
-            Toast.makeText(this, "Nenhum comboio encontrado.", Toast.LENGTH_SHORT).show()
-        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
