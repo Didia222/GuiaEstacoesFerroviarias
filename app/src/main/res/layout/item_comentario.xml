@@ -14,23 +14,49 @@
         android:orientation="vertical"
         android:padding="12dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvAutorItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Viajante"
+                android:textStyle="bold"
+                android:textColor="#0D47A1"
+                android:textSize="15sp"
+                android:layout_weight="1" />
+
+            <RatingBar
+                android:id="@+id/rbEstrelasItem"
+                style="?android:attr/ratingBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:numStars="5"
+                android:stepSize="0.5"
+                android:isIndicator="true"
+                android:progressTint="#FFB300" />
+        </LinearLayout>
+
         <TextView
-            android:id="@+id/tvAutorItem"
+            android:id="@+id/tvDataHoraItem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Viajante"
-            android:textStyle="bold"
-            android:textColor="#0D47A1"
-            android:textSize="14sp" />
+            android:textSize="12sp"
+            android:textColor="#888888"
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:id="@+id/tvTextoItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:text="Comentário aqui..."
             android:textColor="#333333"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <ImageView
             android:id="@+id/ivFotoItem"
@@ -40,5 +66,6 @@
             android:scaleType="centerCrop"
             android:visibility="gone"
             android:background="#EEEEEE" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

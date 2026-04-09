@@ -1,25 +1,42 @@
 package com.diogo.guiaestacoes
 
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import java.text.Normalizer
-
-// A antiga "data class Avaliacao" foi apagada daqui. Agora usamos o Comentario!
+import java.util.UUID
 
 class AvaliacaoActivity : AppCompatActivity() {
 
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private lateinit var idEstacaoLimpo: String
+
+    private var uriImagemSelecionada: Uri? = null
+    private lateinit var ivPreviewFoto: ImageView
+
+    private val escolherImagemLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            uriImagemSelecionada = uri
+            ivPreviewFoto.setImageURI(uri)
+            ivPreviewFoto.visibility = View.VISIBLE
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,12 +45,19 @@ class AvaliacaoActivity : AppCompatActivity() {
         val nomeEstacao = intent.getStringExtra("NOME") ?: "Estação Desconhecida"
         idEstacaoLimpo = limparTexto(nomeEstacao)
 
-        // UI Setup
+        // Configuração da Toolbar e da SETA de voltar atrás
         val toolbar = findViewById<Toolbar>(R.id.toolbarAvaliacao)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true) // Ativa o botão da seta no código
         supportActionBar?.title = ""
+
+        // Se a seta estiver branca e o fundo branco, isto garante que ela fica visível (preta)
         toolbar.navigationIcon?.setTint(Color.BLACK)
+
+        // Isto diz à App o que fazer quando se clica na seta (Voltar para trás)
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
@@ -46,8 +70,15 @@ class AvaliacaoActivity : AppCompatActivity() {
 
         val ratingBar = findViewById<RatingBar>(R.id.ratingBar)
         val etNome = findViewById<EditText>(R.id.etNomeAvaliador)
-        val etComentario = findViewById<EditText>(R.id.etComentarioAvaliacao) // O campo de texto que adicionámos
+        val etComentario = findViewById<EditText>(R.id.etComentarioAvaliacao)
         val btnGuardar = findViewById<Button>(R.id.btnGuardarAvaliacao)
+
+        val btnAdicionarFoto = findViewById<ImageButton>(R.id.btnAdicionarFotoAvaliacao)
+        ivPreviewFoto = findViewById(R.id.ivPreviewFoto)
+
+        btnAdicionarFoto.setOnClickListener {
+            escolherImagemLauncher.launch("image/*")
+        }
 
         btnGuardar.setOnClickListener {
             val estrelas = ratingBar.rating
@@ -60,16 +91,38 @@ class AvaliacaoActivity : AppCompatActivity() {
             }
 
             if (nome.isEmpty()) {
-                nome = "Viajante Anónimo" // Opcional: Se não preencher nome
+                nome = "Viajante Anónimo"
             }
 
-            // Agora enviamos para os COMENTÁRIOS
-            guardarAvaliacaoComoComentario(nome, textoComentario, estrelas)
+            btnGuardar.isEnabled = false
+
+            if (uriImagemSelecionada != null) {
+                Toast.makeText(this, "A enviar foto e avaliação... ⏳", Toast.LENGTH_SHORT).show()
+                fazerUploadDaFotoEGuardar(nome, textoComentario, estrelas, btnGuardar)
+            } else {
+                Toast.makeText(this, "A enviar avaliação... ⏳", Toast.LENGTH_SHORT).show()
+                guardarAvaliacaoComoComentario(nome, textoComentario, estrelas, "", btnGuardar)
+            }
         }
     }
 
-    private fun guardarAvaliacaoComoComentario(nome: String, texto: String, estrelas: Float) {
-        // Apontamos diretamente para a coleção 'comentarios'
+    private fun fazerUploadDaFotoEGuardar(nome: String, texto: String, estrelas: Float, btn: Button) {
+        val nomeFicheiro = "${UUID.randomUUID()}.jpg"
+        val refStorage = storage.reference.child("fotos_estacoes/$idEstacaoLimpo/$nomeFicheiro")
+
+        refStorage.putFile(uriImagemSelecionada!!)
+            .addOnSuccessListener {
+                refStorage.downloadUrl.addOnSuccessListener { uriDownload ->
+                    guardarAvaliacaoComoComentario(nome, texto, estrelas, uriDownload.toString(), btn)
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Erro ao enviar foto.", Toast.LENGTH_SHORT).show()
+                btn.isEnabled = true
+            }
+    }
+
+    private fun guardarAvaliacaoComoComentario(nome: String, texto: String, estrelas: Float, urlFoto: String, btn: Button) {
         val novoDocumentoRef = db.collection("comentarios").document()
 
         val novoComentario = Comentario(
@@ -77,18 +130,19 @@ class AvaliacaoActivity : AppCompatActivity() {
             id_estacao = idEstacaoLimpo,
             autor = nome,
             texto = texto,
-            url_foto = "",
+            url_foto = urlFoto,
             timestamp = System.currentTimeMillis(),
-            estrelas = estrelas // Salvamos as estrelas aqui!
+            estrelas = estrelas
         )
 
         novoDocumentoRef.set(novoComentario)
             .addOnSuccessListener {
-                Toast.makeText(this, "Publicado com sucesso!", Toast.LENGTH_LONG).show()
-                finish() // Volta para o mapa ou para os detalhes
+                Toast.makeText(this, "Avaliação publicada com sucesso! 🎉", Toast.LENGTH_LONG).show()
+                finish()
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Erro ao publicar.", Toast.LENGTH_SHORT).show()
+                btn.isEnabled = true
             }
     }
 
@@ -97,10 +151,5 @@ class AvaliacaoActivity : AppCompatActivity() {
         return "\\p{InCombiningDiacriticalMarks}+".toRegex()
             .replace(normalizado, "")
             .replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressedDispatcher.onBackPressed()
-        return true
     }
 }

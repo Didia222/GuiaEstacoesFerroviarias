@@ -9,5 +9,5 @@ data class Comentario(
     var texto: String = "",
     var url_foto: String = "",
     var timestamp: Long = System.currentTimeMillis(),
-    var estrelas: Float = 0f
+    var estrelas: Float = 0f // Nova variável para a avaliação
 ) : Serializable
