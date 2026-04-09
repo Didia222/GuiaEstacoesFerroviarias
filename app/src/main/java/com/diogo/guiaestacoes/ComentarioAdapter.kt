@@ -11,21 +11,18 @@ import com.bumptech.glide.Glide
 class ComentarioAdapter(private val listaComentarios: List<Comentario>) :
     RecyclerView.Adapter<ComentarioAdapter.ComentarioViewHolder>() {
 
-    // 1. O ViewHolder é quem segura os componentes do XML
     class ComentarioViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvAutor: TextView = view.findViewById(R.id.tvAutorItem)
         val tvTexto: TextView = view.findViewById(R.id.tvTextoItem)
         val ivFoto: ImageView = view.findViewById(R.id.ivFotoItem)
     }
 
-    // 2. Infla o layout item_comentario que criámos
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ComentarioViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_comentario, parent, false)
         return ComentarioViewHolder(view)
     }
 
-    // 3. Liga os dados do objeto Comentario aos componentes visuais
     override fun onBindViewHolder(holder: ComentarioViewHolder, position: Int) {
         val comentario = listaComentarios[position]
 

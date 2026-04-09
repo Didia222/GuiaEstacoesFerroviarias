@@ -35,7 +35,7 @@ class GaleriaActivity : AppCompatActivity() {
 
     private val escolherImagemLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            fazerUploadDaImagem(uri)
+            fazerUploadDaImagem(uri) // O "_" foi apagado daqui!
         }
     }
 
@@ -43,30 +43,31 @@ class GaleriaActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_galeria)
 
-        // 1. Configurar Identificação da Estação
         val nomeEstacao = intent.getStringExtra("NOME") ?: "Estação"
         idEstacaoLimpo = limparTexto(nomeEstacao)
 
-        // 2. Toolbar
         val toolbar = findViewById<Toolbar>(R.id.toolbarGaleria)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Galeria de $nomeEstacao"
         toolbar.navigationIcon?.setTint(Color.BLACK)
 
-        // 3. Configurar RecyclerView de Fotos
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            v.setPadding(0, statusBars.top, 0, 0)
+            insets
+        }
+
         val rvFotos = findViewById<RecyclerView>(R.id.rvFotos)
         rvFotos.layoutManager = GridLayoutManager(this, 2)
         adapterFotos = FotoAdapter(listaFotos)
         rvFotos.adapter = adapterFotos
 
-        // 4. Configurar RecyclerView de Comentários
         val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.adapter = adapterComentarios
 
-        // 5. Botões
         val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
         findViewById<ImageButton>(R.id.btnEnviarComentario).setOnClickListener {
             val texto = etNovoComentario.text.toString().trim()
@@ -80,17 +81,16 @@ class GaleriaActivity : AppCompatActivity() {
             escolherImagemLauncher.launch("image/*")
         }
 
-        // 6. Carregar Dados
         carregarFotosDoFirebase()
         carregarComentariosDoFirebase()
     }
 
-    // --- LÓGICA DE FOTOS ---
-
+    // O "_" foi apagado do nome da função!
     private fun fazerUploadDaImagem(uri: Uri) {
-
         val nomeFicheiro = "${UUID.randomUUID()}.jpg"
         val ref = storage.reference.child("fotos_estacoes/${idEstacaoLimpo}/${nomeFicheiro}")
+
+        Toast.makeText(this, "A fazer upload...", Toast.LENGTH_SHORT).show()
 
         ref.putFile(uri).addOnSuccessListener {
             ref.downloadUrl.addOnSuccessListener { url ->
@@ -105,7 +105,7 @@ class GaleriaActivity : AppCompatActivity() {
         val idFoto = db.collection("fotos_estacoes").document().id
         val fotoData = hashMapOf(
             "id_foto" to idFoto,
-            "estacao_id" to idEstacaoLimpo,
+            "id_estacao" to idEstacaoLimpo,
             "caminho_ficheiro" to url,
             "ano" to java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
         )
@@ -118,7 +118,7 @@ class GaleriaActivity : AppCompatActivity() {
 
     private fun carregarFotosDoFirebase() {
         db.collection("fotos_estacoes")
-            .whereEqualTo("estacao_id", idEstacaoLimpo)
+            .whereEqualTo("id_estacao", idEstacaoLimpo)
             .addSnapshotListener { snapshots, _ ->
                 if (snapshots == null) return@addSnapshotListener
                 listaFotos.clear()
@@ -126,11 +126,13 @@ class GaleriaActivity : AppCompatActivity() {
                     val url = doc.getString("caminho_ficheiro") ?: ""
                     if (url.isNotEmpty()) listaFotos.add(url)
                 }
+                // Imagem de placeholder se estiver vazia
+                if (listaFotos.isEmpty()) {
+                    listaFotos.add("https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?w=500")
+                }
                 adapterFotos.notifyDataSetChanged()
             }
     }
-
-    // --- LÓGICA DE COMENTÁRIOS (Sincronizada com Comentario.kt) ---
 
     private fun carregarComentariosDoFirebase() {
         db.collection("comentarios")
@@ -150,7 +152,6 @@ class GaleriaActivity : AppCompatActivity() {
     private fun enviarComentarioParaFirebase(texto: String) {
         val id = db.collection("comentarios").document().id
 
-        // Aqui usamos os nomes EXATOS do teu ficheiro Comentario.kt
         val novoComentario = Comentario(
             id_comentario = id,
             id_estacao = idEstacaoLimpo,

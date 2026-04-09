@@ -3,10 +3,10 @@ package com.diogo.guiaestacoes
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.Bundle
 import android.provider.BaseColumns
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -99,19 +99,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
                         val tipoDetectado = when {
                             textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
-
-                            // 2. Verifica palavras chave de paragens menores
-                            textoParaAnalise.contains("paragem") ||
-                                    textoParaAnalise.contains("halte") -> "Apeadeiro"
-
-                            // 3. Caso contrário, assume Estação
+                            textoParaAnalise.contains("paragem") || textoParaAnalise.contains("halte") -> "Apeadeiro"
                             else -> "Estação Ferroviária"
                         }
 
                         val marker = map.addMarker(MarkerOptions().position(LatLng(estacao.latitude, estacao.longitude)).title(estacao.nome).snippet(tipoDetectado))
                         marker?.tag = estacao
                         if (marker != null) listaMarcadores.add(marker)
-
                     }
                 }
                 listaEstacoesOficiais = listaTemp
@@ -155,6 +149,23 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             dialog.dismiss()
         }
 
+        view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
+            // CORREÇÃO: Removido o startActivity(intent) duplicado que causava erro
+            val intent = Intent(this, GaleriaActivity::class.java).apply {
+                putExtra("NOME", marker.title)
+            }
+            startActivity(intent)
+            dialog.dismiss()
+        }
+
+        view.findViewById<Button>(R.id.btnAvaliar).setOnClickListener {
+            val intent = Intent(this, AvaliacaoActivity::class.java).apply {
+                putExtra("NOME", marker.title)
+            }
+            startActivity(intent)
+            dialog.dismiss()
+        }
+
         dialog.show()
         return true
     }
@@ -180,9 +191,40 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
         sugestoesAdapter = SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, arrayOf("estacaoNome"), intArrayOf(android.R.id.text1), CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER)
         searchView.suggestionsAdapter = sugestoesAdapter
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(q: String?): Boolean { q?.let { procurarEstacaoNoMapa(it) }; return false }
-            override fun onQueryTextChange(n: String?): Boolean { filtrarSugestoes(n); return true }
+            override fun onQueryTextSubmit(q: String?): Boolean {
+                q?.let { procurarEstacaoNoMapa(it) }
+                searchView.clearFocus() // Esconde o teclado
+                return true
+            }
+            override fun onQueryTextChange(n: String?): Boolean {
+                filtrarSugestoes(n)
+                return true
+            }
+        })
+
+        // A GRANDE CORREÇÃO ESTÁ AQUI: O Listener para os cliques nas sugestões!
+        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
+            override fun onSuggestionSelect(position: Int): Boolean {
+                return false
+            }
+
+            override fun onSuggestionClick(position: Int): Boolean {
+                val cursor = sugestoesAdapter.cursor as Cursor
+                if (cursor.moveToPosition(position)) {
+                    // Pega o nome da estação em que o utilizador clicou
+                    val nomeEstacaoClicada = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
+
+                    // Coloca o nome na barra e faz a pesquisa no mapa
+                    searchView.setQuery(nomeEstacaoClicada, false)
+                    procurarEstacaoNoMapa(nomeEstacaoClicada)
+
+                    // Esconde o teclado após o clique
+                    searchView.clearFocus()
+                }
+                return true
+            }
         })
     }
 
@@ -198,6 +240,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun procurarEstacaoNoMapa(nome: String) {
         val q = normalizarTexto(nome)
         listaMarcadores.find { normalizarTexto(it.title ?: "").contains(q) }?.let {
+            // Nível de zoom definido para 15f (suficiente para ver o marcador e a rua)
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position, 15f))
             it.showInfoWindow()
         }

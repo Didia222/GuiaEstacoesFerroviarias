@@ -6,15 +6,14 @@
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"  >
-
+    app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="12dp">
-        
+
         <TextView
             android:id="@+id/tvAutorItem"
             android:layout_width="wrap_content"
@@ -23,6 +22,7 @@
             android:textStyle="bold"
             android:textColor="#0D47A1"
             android:textSize="14sp" />
+
         <TextView
             android:id="@+id/tvTextoItem"
             android:layout_width="match_parent"
@@ -31,8 +31,8 @@
             android:text="Comentário aqui..."
             android:textColor="#333333"
             android:textSize="16sp" />
-        
-        <TextView
+
+        <ImageView
             android:id="@+id/ivFotoItem"
             android:layout_width="match_parent"
             android:layout_height="200dp"
@@ -40,13 +40,5 @@
             android:scaleType="centerCrop"
             android:visibility="gone"
             android:background="#EEEEEE" />
-        
-        
-        
     </LinearLayout>
-
-
-
-
-
 </androidx.cardview.widget.CardView>

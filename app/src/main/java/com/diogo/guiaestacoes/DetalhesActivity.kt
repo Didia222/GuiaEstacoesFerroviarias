@@ -17,6 +17,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import java.text.Normalizer
 import java.util.UUID
 
 class DetalhesActivity : AppCompatActivity() {
@@ -30,39 +31,41 @@ class DetalhesActivity : AppCompatActivity() {
 
     // Variáveis da Estação
     private var nomeEstacao: String = ""
+    private var idEstacaoLimpo: String = "" // A NOVA VARIÁVEL CRÍTICA
 
     // Variáveis da Lista de Comentários
     private lateinit var adapter: ComentarioAdapter
     private val listaComentarios = mutableListOf<Comentario>()
 
     // Lançador para abrir a Galeria
-    private val selecionarImagemLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data: Intent? = result.data
-                uriImagemSelecionada = data?.data
-                if (uriImagemSelecionada != null) {
-                    Toast.makeText(this, "Foto selecionada! 📷", Toast.LENGTH_SHORT).show()
-                }
+    private val selecionarImagemLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data: Intent? = result.data
+            uriImagemSelecionada = data?.data
+            if (uriImagemSelecionada != null) {
+                Toast.makeText(this, "Foto selecionada! 📷", Toast.LENGTH_SHORT).show()
             }
         }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalhes)
 
-        // 1. Inicializar Firebase
+        // Inicializar Firebase
         db = FirebaseFirestore.getInstance()
         storage = FirebaseStorage.getInstance()
 
-        // 2. Receber dados da Intent
+        // Receber dados da Intent e Limpar o ID
         nomeEstacao = intent.getStringExtra("NOME") ?: ""
+        idEstacaoLimpo = limparTexto(nomeEstacao) // LIMPEZA FEITA AQUI
+
         val tipo = intent.getStringExtra("TIPO") ?: ""
         val historia = intent.getStringExtra("HISTORIA") ?: ""
         val lat = intent.getDoubleExtra("LATITUDE", 0.0)
         val lng = intent.getDoubleExtra("LONGITUDE", 0.0)
 
-        // 3. Configurar UI Básica
+        // Configurar UI Básica
         val tvTitulo = findViewById<TextView>(R.id.tvTituloDetalhe)
         val tvTipo = findViewById<TextView>(R.id.tvTipoDetalhe)
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
@@ -73,17 +76,16 @@ class DetalhesActivity : AppCompatActivity() {
         tvTipo.text = tipo
         tvConteudo.text = historia
 
-        // 4. Configurar a Lista (RecyclerView) de Comentários
+        // Configurar a Lista (RecyclerView) de Comentários
         val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         adapter = ComentarioAdapter(listaComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         rvComentarios.adapter = adapter
 
-        // 5. Começar a ouvir os comentários do Firebase
+        // Começar a ouvir os comentários do Firebase
         ouvirComentarios()
 
-        // --- CLIQUES ---
-
+        // --- CLIQUES BÁSICOS ---
         btnVerNoMapa.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra("LAT_RETORNO", lat)
@@ -105,6 +107,7 @@ class DetalhesActivity : AppCompatActivity() {
             isExpanded = !isExpanded
         }
 
+        // --- CLIQUES COMENTÁRIOS E FOTOS ---
         val btnTirarFoto = findViewById<ImageButton>(R.id.btnTirarFoto)
         val btnEnviarComentario = findViewById<ImageButton>(R.id.btnEnviarComentario)
         val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
@@ -122,32 +125,20 @@ class DetalhesActivity : AppCompatActivity() {
             Toast.makeText(this, "A enviar... ⏳", Toast.LENGTH_SHORT).show()
 
             if (uriImagemSelecionada != null) {
-                fazerUploadImagemEGuardarComentario(
-                    textoComentario,
-                    etNovoComentario,
-                    btnEnviarComentario
-                )
+                fazerUploadImagemEGuardarComentario(textoComentario, etNovoComentario, btnEnviarComentario)
             } else {
-                guardarComentarioNoFirestore(
-                    textoComentario,
-                    "",
-                    etNovoComentario,
-                    btnEnviarComentario
-                )
+                guardarComentarioNoFirestore(textoComentario, "", etNovoComentario, btnEnviarComentario)
             }
         }
     }
 
     private fun ouvirComentarios() {
-        // Esta função vai à coleção "comentarios" e busca apenas os desta estação
+        // Usa idEstacaoLimpo!
         db.collection("comentarios")
-            .whereEqualTo("id_estacao", nomeEstacao)
-            .orderBy("timestamp", Query.Direction.DESCENDING) // Mais recentes primeiro
+            .whereEqualTo("id_estacao", idEstacaoLimpo)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    return@addSnapshotListener
-                }
-
+                if (e != null) return@addSnapshotListener
                 if (snapshots != null) {
                     listaComentarios.clear()
                     for (doc in snapshots) {
@@ -164,13 +155,10 @@ class DetalhesActivity : AppCompatActivity() {
         selecionarImagemLauncher.launch(intent)
     }
 
-    private fun fazerUploadImagemEGuardarComentario(
-        texto: String,
-        inputField: EditText,
-        btnEnviar: ImageButton
-    ) {
+    private fun fazerUploadImagemEGuardarComentario(texto: String, inputField: EditText, btnEnviar: ImageButton) {
         val fileName = UUID.randomUUID().toString() + ".jpg"
-        val refStorage = storage.reference.child("fotos_estacoes/$fileName")
+        // Usa idEstacaoLimpo na pasta!
+        val refStorage = storage.reference.child("fotos_estacoes/$idEstacaoLimpo/$fileName")
 
         refStorage.putFile(uriImagemSelecionada!!)
             .addOnSuccessListener {
@@ -183,40 +171,36 @@ class DetalhesActivity : AppCompatActivity() {
             }
     }
 
-    private fun guardarComentarioNoFirestore(
-        texto: String,
-        urlFoto: String,
-        inputField: EditText,
-        btnEnviar: ImageButton
-    ) {
-
-        // 1. Criamos uma referência para um novo documento vazio para obter o ID gerado pela Google
+    private fun guardarComentarioNoFirestore(texto: String, urlFoto: String, inputField: EditText, btnEnviar: ImageButton) {
         val novoDocumentoRef = db.collection("comentarios").document()
         val idGerado = novoDocumentoRef.id
 
-        // 2. Criamos o objeto já com esse ID lá dentro
         val novoComentario = Comentario(
-            id_comentario = idGerado, // <--- Aqui está ele!
-            id_estacao = nomeEstacao,
+            id_comentario = idGerado,
+            id_estacao = idEstacaoLimpo, // Usa idEstacaoLimpo!
             autor = "Viajante Anónimo",
             texto = texto,
             url_foto = urlFoto,
             timestamp = System.currentTimeMillis()
         )
 
-        // 3. Guardamos no Firebase usando esse ID
         novoDocumentoRef.set(novoComentario)
             .addOnSuccessListener {
-                Toast.makeText(this, "Publicado! 🎉", Toast.LENGTH_SHORT).show()
                 inputField.text.clear()
                 uriImagemSelecionada = null
                 btnEnviar.isEnabled = true
+                Toast.makeText(this, "Publicado! 🎉", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
                 btnEnviar.isEnabled = true
-                Toast.makeText(this, "Erro ao guardar.", Toast.LENGTH_SHORT).show()
             }
     }
+
+    // A FUNÇÃO MÁGICA DE LIMPAR TEXTO
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
+            .replace(normalizado, "")
+            .replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
+    }
 }
-
-
