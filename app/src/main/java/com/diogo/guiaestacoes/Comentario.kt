@@ -8,5 +8,6 @@ data class Comentario(
     var autor: String = "Viajante Anónimo",
     var texto: String = "",
     var url_foto: String = "",
-    var timestamp: Long = System.currentTimeMillis()
+    var timestamp: Long = System.currentTimeMillis(),
+    var estrelas: Float = 0f
 ) : Serializable

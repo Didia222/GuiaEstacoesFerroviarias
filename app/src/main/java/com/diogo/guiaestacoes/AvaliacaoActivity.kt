@@ -14,13 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.Normalizer
 
-// Modelo de Dados para a Avaliação
-data class Avaliacao(
-    val estacaoId: String = "",
-    val nomeAvaliador: String = "",
-    val estrelas: Float = 0f,
-    val timestamp: Long = 0L
-)
+// A antiga "data class Avaliacao" foi apagada daqui. Agora usamos o Comentario!
 
 class AvaliacaoActivity : AppCompatActivity() {
 
@@ -52,11 +46,13 @@ class AvaliacaoActivity : AppCompatActivity() {
 
         val ratingBar = findViewById<RatingBar>(R.id.ratingBar)
         val etNome = findViewById<EditText>(R.id.etNomeAvaliador)
+        val etComentario = findViewById<EditText>(R.id.etComentarioAvaliacao) // O campo de texto que adicionámos
         val btnGuardar = findViewById<Button>(R.id.btnGuardarAvaliacao)
 
         btnGuardar.setOnClickListener {
             val estrelas = ratingBar.rating
-            val nome = etNome.text.toString().trim()
+            var nome = etNome.text.toString().trim()
+            val textoComentario = etComentario.text.toString().trim()
 
             if (estrelas == 0f) {
                 Toast.makeText(this, "Por favor, dá pelo menos 1 estrela.", Toast.LENGTH_SHORT).show()
@@ -64,24 +60,35 @@ class AvaliacaoActivity : AppCompatActivity() {
             }
 
             if (nome.isEmpty()) {
-                Toast.makeText(this, "Por favor, insere o teu nome.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+                nome = "Viajante Anónimo" // Opcional: Se não preencher nome
             }
 
-            guardarAvaliacao(nome, estrelas)
+            // Agora enviamos para os COMENTÁRIOS
+            guardarAvaliacaoComoComentario(nome, textoComentario, estrelas)
         }
     }
 
-    private fun guardarAvaliacao(nome: String, estrelas: Float) {
-        val avaliacao = Avaliacao(idEstacaoLimpo, nome, estrelas, System.currentTimeMillis())
+    private fun guardarAvaliacaoComoComentario(nome: String, texto: String, estrelas: Float) {
+        // Apontamos diretamente para a coleção 'comentarios'
+        val novoDocumentoRef = db.collection("comentarios").document()
 
-        db.collection("avaliacoes").add(avaliacao)
+        val novoComentario = Comentario(
+            id_comentario = novoDocumentoRef.id,
+            id_estacao = idEstacaoLimpo,
+            autor = nome,
+            texto = texto,
+            url_foto = "",
+            timestamp = System.currentTimeMillis(),
+            estrelas = estrelas // Salvamos as estrelas aqui!
+        )
+
+        novoDocumentoRef.set(novoComentario)
             .addOnSuccessListener {
-                Toast.makeText(this, "Avaliação guardada com sucesso!", Toast.LENGTH_LONG).show()
-                finish() // Fecha o ecrã e volta para trás
+                Toast.makeText(this, "Publicado com sucesso!", Toast.LENGTH_LONG).show()
+                finish() // Volta para o mapa ou para os detalhes
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Erro ao guardar na base de dados.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Erro ao publicar.", Toast.LENGTH_SHORT).show()
             }
     }
 
