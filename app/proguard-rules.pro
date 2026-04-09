@@ -1,21 +1,11 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Regras para o Firebase não se perder com as Classes de Dados
+-keep class com.diogo.guiaestacoes.Comentario { *; }
+-keep class com.diogo.guiaestacoes.Estacao { *; }
+-keep class com.diogo.guiaestacoes.Comboio { *; }
+-keep class com.diogo.guiaestacoes.FotoEstacao { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Mantém os nomes genéricos para o Firebase Firestore
+-keepattributes Signature
+-keepclassmembers class * {
+  @com.google.firebase.firestore.PropertyName <fields>;
+}

@@ -140,7 +140,7 @@
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_expand_more"
                         android:contentDescription="Ler Mais"
-                        android:tint="#0D47A1" />
+                        app:tint="#0D47A1" />
                 </LinearLayout>
 
                 <TextView
@@ -185,56 +185,26 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvComentarios"
                     android:layout_width="0dp"
-                    android:layout_height="300dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:nestedScrollingEnabled="false"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvLabelComentarios" />
 
-                <LinearLayout
-                    android:id="@+id/llBarraComentario"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAbrirAvaliacaoDetalhes"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:background="#EEEEEE"
-                    android:gravity="center_horizontal"
-                    android:orientation="horizontal"
-                    android:padding="4dp"
+                    android:layout_height="65dp"
+                    android:layout_marginTop="24dp"
+                    android:text="Deixar Avaliação ou Comentário"
+                    android:textSize="16sp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="#0D47A1"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/rvComentarios" >
-
-                    <ImageButton
-                        android:id="@+id/btnTirarFoto"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Tirar Foto"
-                        android:src="@android:drawable/ic_menu_camera"
-                        app:tint="#555555" />
-
-                    <EditText
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@android:color/transparent"
-                        android:hint="Adiciona um comentário ou foto..."
-                        android:maxLines="3"
-                        android:padding="8dp"
-                        android:textSize="14sp" />
-
-                    <ImageButton
-                        android:id="@+id/btnEnviarComentario"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Enviar"
-                        android:src="@android:drawable/ic_menu_send"
-                        app:tint="#0D47A1" />
-
-                </LinearLayout>
+                    app:layout_constraintTop_toBottomOf="@id/rvComentarios" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </ScrollView>

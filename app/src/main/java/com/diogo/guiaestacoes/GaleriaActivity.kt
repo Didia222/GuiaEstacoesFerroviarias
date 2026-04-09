@@ -1,10 +1,10 @@
 package com.diogo.guiaestacoes
 
+import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.widget.EditText
-import android.widget.ImageButton
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -26,6 +26,7 @@ class GaleriaActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private lateinit var idEstacaoLimpo: String
+    private lateinit var nomeEstacaoOficial: String
 
     private val listaFotos = mutableListOf<String>()
     private lateinit var adapterFotos: FotoAdapter
@@ -35,7 +36,7 @@ class GaleriaActivity : AppCompatActivity() {
 
     private val escolherImagemLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            fazerUploadDaImagem(uri) // O "_" foi apagado daqui!
+            fazerUploadDaImagem(uri)
         }
     }
 
@@ -43,14 +44,18 @@ class GaleriaActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_galeria)
 
-        val nomeEstacao = intent.getStringExtra("NOME") ?: "Estação"
-        idEstacaoLimpo = limparTexto(nomeEstacao)
+        nomeEstacaoOficial = intent.getStringExtra("NOME") ?: "Estação"
+        idEstacaoLimpo = limparTexto(nomeEstacaoOficial)
 
         val toolbar = findViewById<Toolbar>(R.id.toolbarGaleria)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Galeria de $nomeEstacao"
+        supportActionBar?.title = "Galeria de $nomeEstacaoOficial"
         toolbar.navigationIcon?.setTint(Color.BLACK)
+
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
@@ -68,13 +73,12 @@ class GaleriaActivity : AppCompatActivity() {
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.adapter = adapterComentarios
 
-        val etNovoComentario = findViewById<EditText>(R.id.etNovoComentario)
-        findViewById<ImageButton>(R.id.btnEnviarComentario).setOnClickListener {
-            val texto = etNovoComentario.text.toString().trim()
-            if (texto.isNotEmpty()) {
-                enviarComentarioParaFirebase(texto)
-                etNovoComentario.text.clear()
+        // O NOVO BOTÃO DE AVALIAÇÃO
+        findViewById<Button>(R.id.btnAbrirAvaliacao).setOnClickListener {
+            val intent = Intent(this, AvaliacaoActivity::class.java).apply {
+                putExtra("NOME", nomeEstacaoOficial)
             }
+            startActivity(intent)
         }
 
         findViewById<FloatingActionButton>(R.id.fabAdicionarFoto).setOnClickListener {
@@ -85,12 +89,11 @@ class GaleriaActivity : AppCompatActivity() {
         carregarComentariosDoFirebase()
     }
 
-    // O "_" foi apagado do nome da função!
     private fun fazerUploadDaImagem(uri: Uri) {
         val nomeFicheiro = "${UUID.randomUUID()}.jpg"
         val ref = storage.reference.child("fotos_estacoes/${idEstacaoLimpo}/${nomeFicheiro}")
 
-        Toast.makeText(this, "A fazer upload...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "A fazer upload para a Galeria...", Toast.LENGTH_SHORT).show()
 
         ref.putFile(uri).addOnSuccessListener {
             ref.downloadUrl.addOnSuccessListener { url ->
@@ -112,7 +115,7 @@ class GaleriaActivity : AppCompatActivity() {
 
         db.collection("fotos_estacoes").document(idFoto).set(fotoData)
             .addOnSuccessListener {
-                Toast.makeText(this, "Foto adicionada!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Foto adicionada à galeria!", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -126,7 +129,6 @@ class GaleriaActivity : AppCompatActivity() {
                     val url = doc.getString("caminho_ficheiro") ?: ""
                     if (url.isNotEmpty()) listaFotos.add(url)
                 }
-                // Imagem de placeholder se estiver vazia
                 if (listaFotos.isEmpty()) {
                     listaFotos.add("https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?w=500")
                 }
@@ -137,7 +139,7 @@ class GaleriaActivity : AppCompatActivity() {
     private fun carregarComentariosDoFirebase() {
         db.collection("comentarios")
             .whereEqualTo("id_estacao", idEstacaoLimpo)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
+            // APAGÁMOS A LINHA DO ORDERBY AQUI!
             .addSnapshotListener { snapshots, _ ->
                 if (snapshots == null) return@addSnapshotListener
                 listaComentarios.clear()
@@ -145,24 +147,10 @@ class GaleriaActivity : AppCompatActivity() {
                     val c = doc.toObject(Comentario::class.java)
                     listaComentarios.add(c)
                 }
+                // ORDENAÇÃO LOCAL AQUI TAMBÉM:
+                listaComentarios.sortByDescending { it.timestamp }
+
                 adapterComentarios.notifyDataSetChanged()
-            }
-    }
-
-    private fun enviarComentarioParaFirebase(texto: String) {
-        val id = db.collection("comentarios").document().id
-
-        val novoComentario = Comentario(
-            id_comentario = id,
-            id_estacao = idEstacaoLimpo,
-            autor = "Viajante",
-            texto = texto,
-            timestamp = System.currentTimeMillis()
-        )
-
-        db.collection("comentarios").document(id).set(novoComentario)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Comentário enviado!", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -171,10 +159,5 @@ class GaleriaActivity : AppCompatActivity() {
         return "\\p{InCombiningDiacriticalMarks}+".toRegex()
             .replace(normalizado, "")
             .replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressedDispatcher.onBackPressed()
-        return true
     }
 }

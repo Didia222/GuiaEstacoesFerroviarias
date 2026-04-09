@@ -9,9 +9,11 @@
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbarAvaliacao"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
         android:background="@android:color/white"
         android:elevation="4dp"
+        app:theme="@style/ThemeOverlay.AppCompat.Light"
         app:navigationIcon="?attr/homeAsUpIndicator"
         app:layout_constraintTop_toTopOf="parent" />
 

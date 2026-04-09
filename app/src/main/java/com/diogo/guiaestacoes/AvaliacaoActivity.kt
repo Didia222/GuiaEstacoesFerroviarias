@@ -1,6 +1,5 @@
 package com.diogo.guiaestacoes
 
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -48,15 +47,14 @@ class AvaliacaoActivity : AppCompatActivity() {
         // Configuração da Toolbar e da SETA de voltar atrás
         val toolbar = findViewById<Toolbar>(R.id.toolbarAvaliacao)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true) // Ativa o botão da seta no código
+
+        // Ativa a seta visualmente
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
 
-        // Se a seta estiver branca e o fundo branco, isto garante que ela fica visível (preta)
-        toolbar.navigationIcon?.setTint(Color.BLACK)
-
-        // Isto diz à App o que fazer quando se clica na seta (Voltar para trás)
+        // Diz à seta para fechar esta janela e voltar para a anterior
         toolbar.setNavigationOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
+            finish()
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->

@@ -1,12 +1,13 @@
 package com.diogo.guiaestacoes
 
+import androidx.annotation.Keep // <-- ADICIONAR ISTO
 import java.io.Serializable
 
+@Keep // <-- E ISTO
 data class Estacao(
-    val id_estacao: String = "",
-    val nome: String = "",
-    val latitude: Double = 0.0,
-    val longitude: Double = 0.0,
-    val Discricao_hist: String = "",
-    val Id_linha: Int = 1
+    var nome: String = "",
+    var latitude: Double = 0.0,
+    var longitude: Double = 0.0,
+    var Discricao_hist: String = ""
+    // ... (deixa os restantes campos como já os tens)
 ) : Serializable
