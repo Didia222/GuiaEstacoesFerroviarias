@@ -110,17 +110,24 @@ class DetalhesActivity : AppCompatActivity() {
     }
 
     private fun carregarCronologia() {
-        // Vamos buscar a cronologia dentro do documento da própria estação no Firebase
         db.collection("Estacao").document(idEstacaoLimpo).collection("cronologia")
             .orderBy("ano")
             .get()
             .addOnSuccessListener { snapshots ->
-                listaEventos.clear()
-                for (doc in snapshots) {
-                    val evento = doc.toObject(EventoHistorico::class.java)
-                    listaEventos.add(evento)
+                // Se não houver história, escondemos a secção inteira
+                if (snapshots.isEmpty) {
+                    findViewById<android.widget.LinearLayout>(R.id.llHistoriaLabel).visibility = android.view.View.GONE
+                    findViewById<TextView>(R.id.tvConteudoDetalhe).visibility = android.view.View.GONE
+                    findViewById<RecyclerView>(R.id.rvTimeline).visibility = android.view.View.GONE
+                    findViewById<android.view.View>(R.id.linhaSeparadora).visibility = android.view.View.GONE
+                } else {
+                    listaEventos.clear()
+                    for (doc in snapshots) {
+                        val evento = doc.toObject(EventoHistorico::class.java)
+                        listaEventos.add(evento)
+                    }
+                    adapterTimeline.notifyDataSetChanged()
                 }
-                adapterTimeline.notifyDataSetChanged()
             }
     }
 

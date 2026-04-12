@@ -89,30 +89,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     app:singleSelection="true"
-                    app:checkedButton="@id/btnCarro"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvTipoDetalhe">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCarro"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="De Carro"
-                        app:icon="@android:drawable/ic_menu_directions" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPe"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="A pé"
-                        app:icon="@android:drawable/ic_menu_mylocation" />
-
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnCarro" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="De Carro" app:icon="@android:drawable/ic_menu_directions" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnPe" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="A pé" app:icon="@android:drawable/ic_menu_mylocation" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
-
-
 
                 <LinearLayout
                     android:id="@+id/llBotoesAcao"
@@ -123,26 +105,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/toggleModoTransporte">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMapaDetalhe"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="Ver Mapa"
-                        app:icon="@android:drawable/ic_dialog_map" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPartilharDetalhe"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="Partilhar"
-                        app:icon="@android:drawable/ic_menu_share" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMapaDetalhe" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="8dp" android:text="Ver Mapa" app:icon="@android:drawable/ic_dialog_map" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnPartilharDetalhe" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:text="Partilhar" app:icon="@android:drawable/ic_menu_share" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -155,25 +119,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/llBotoesAcao">
-
-                    <TextView
-                        android:id="@+id/tvLabelHistoria"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="📖  História e Curiosidades"
-                        android:textColor="#424242"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <ImageButton
-                        android:id="@+id/btnExpandirHistoria"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@drawable/ic_expand_more"
-                        android:contentDescription="Ler Mais"
-                        app:tint="#0D47A1" />
+                    <TextView android:id="@+id/tvLabelHistoria" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📖  História e Curiosidades" android:textColor="#424242" android:textSize="18sp" android:textStyle="bold" />
+                    <ImageButton android:id="@+id/btnExpandirHistoria" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_expand_more" android:contentDescription="Ler Mais" app:tint="#0D47A1" />
                 </LinearLayout>
 
                 <TextView
@@ -191,6 +138,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/llHistoriaLabel"
                     tools:text="A Estação de São Bento é um dos maiores ícones..." />
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvTimeline"
                     android:layout_width="0dp"
@@ -209,7 +157,7 @@
                     android:background="#E0E0E0"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintBottom_toBottomOf="@id/tvConteudoDetalhe" />
+                    app:layout_constraintTop_toBottomOf="@id/rvTimeline" />
 
                 <TextView
                     android:id="@+id/tvLabelComentarios"
