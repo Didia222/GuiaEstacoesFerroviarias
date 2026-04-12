@@ -9,67 +9,49 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
-class ComentarioAdapter(private val listaComentarios: List<Comentario>) :
+class ComentarioAdapter(private val lista: List<Comentario>) :
     RecyclerView.Adapter<ComentarioAdapter.ComentarioViewHolder>() {
 
-    class ComentarioViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvAutor: TextView = view.findViewById(R.id.tvAutorItem)
-        val tvTexto: TextView = view.findViewById(R.id.tvTextoItem)
-        val ivFoto: ImageView = view.findViewById(R.id.ivFotoItem)
-
-        // As duas variáveis novas!
-        val rbEstrelas: RatingBar = view.findViewById(R.id.rbEstrelasItem)
-        val tvDataHora: TextView = view.findViewById(R.id.tvDataHoraItem)
+    class ComentarioViewHolder(v: View) : RecyclerView.ViewHolder(v) {
+        val tvAutor: TextView = v.findViewById(R.id.tvAutorItem)
+        val tvData: TextView = v.findViewById(R.id.tvDataHoraItem)
+        val tvTexto: TextView = v.findViewById(R.id.tvTextoItem)
+        val rbEstrelas: RatingBar = v.findViewById(R.id.rbEstrelasItem)
+        val ivFoto: ImageView = v.findViewById(R.id.ivFotoItem)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ComentarioViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_comentario, parent, false)
-        return ComentarioViewHolder(view)
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_comentario, parent, false)
+        return ComentarioViewHolder(v)
     }
 
     override fun onBindViewHolder(holder: ComentarioViewHolder, position: Int) {
-        val comentario = listaComentarios[position]
+        val c = lista[position]
 
-        // 1. Nome do Autor
-        holder.tvAutor.text = comentario.autor
+        holder.tvAutor.text = c.autor
+        holder.tvTexto.text = c.texto
+        holder.rbEstrelas.rating = c.estrelas
 
-        // 2. Data e Hora formatadas
-        val formatador = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault())
-        val dataFormatada = formatador.format(Date(comentario.timestamp))
-        holder.tvDataHora.text = dataFormatada
+        // Formatar a data (ex: 12/04/2026 15:30)
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        holder.tvData.text = sdf.format(Date(c.timestamp))
 
-        // 3. Texto do Comentário (Esconder se estiver vazio)
-        if (comentario.texto.trim().isNotEmpty()) {
-            holder.tvTexto.visibility = View.VISIBLE
-            holder.tvTexto.text = comentario.texto
-        } else {
-            holder.tvTexto.visibility = View.GONE
-        }
-
-        // 4. Lógica das Estrelas
-        if (comentario.estrelas > 0f) {
-            holder.rbEstrelas.visibility = View.VISIBLE
-            holder.rbEstrelas.rating = comentario.estrelas
-        } else {
-            // Se foi um comentário feito sem ser pela Avaliação, não mostra estrelas vazias
-            holder.rbEstrelas.visibility = View.GONE
-        }
-
-        // 5. Lógica da Foto com Glide
-        if (comentario.url_foto.isNotEmpty()) {
+        // --- LÓGICA DA FOTO ---
+        if (!c.url_foto.isNullOrEmpty()) {
             holder.ivFoto.visibility = View.VISIBLE
+
             Glide.with(holder.itemView.context)
-                .load(comentario.url_foto)
-                .placeholder(R.drawable.ic_launcher_background)
+                .load(c.url_foto)
+                .placeholder(R.drawable.ic_launcher_background) // Imagem enquanto carrega
+                .error(android.R.drawable.stat_notify_error)   // Se houver erro
                 .into(holder.ivFoto)
         } else {
+            // Se não houver foto, escondemos a ImageView para não ficar um buraco vazio
             holder.ivFoto.visibility = View.GONE
         }
     }
 
-    override fun getItemCount(): Int = listaComentarios.size
+    override fun getItemCount() = lista.size
 }

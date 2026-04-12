@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="#F8F9FA">
 
     <ImageView
@@ -30,6 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@android:color/transparent"
+        app:navigationIcon="?attr/homeAsUpIndicator"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.cardview.widget.CardView
@@ -81,6 +83,37 @@
                     app:layout_constraintTop_toBottomOf="@id/tvTituloDetalhe"
                     tools:text="Estação Ferroviária" />
 
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleModoTransporte"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    app:singleSelection="true"
+                    app:checkedButton="@id/btnCarro"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTipoDetalhe">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCarro"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="De Carro"
+                        app:icon="@android:drawable/ic_menu_directions" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPe"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="A pé"
+                        app:icon="@android:drawable/ic_menu_mylocation" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+
+
                 <LinearLayout
                     android:id="@+id/llBotoesAcao"
                     android:layout_width="0dp"
@@ -89,7 +122,7 @@
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvTipoDetalhe">
+                    app:layout_constraintTop_toBottomOf="@id/toggleModoTransporte">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMapaDetalhe"
@@ -158,6 +191,15 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/llHistoriaLabel"
                     tools:text="A Estação de São Bento é um dos maiores ícones..." />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTimeline"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:nestedScrollingEnabled="false"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvConteudoDetalhe" />
 
                 <View
                     android:id="@+id/linhaSeparadora"
