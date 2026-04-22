@@ -31,7 +31,6 @@ class DetalhesActivity : AppCompatActivity() {
     private lateinit var adapterTimeline: TimelineAdapter
     private val listaEventos = mutableListOf<EventoHistorico>()
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalhes)
@@ -126,28 +125,6 @@ class DetalhesActivity : AppCompatActivity() {
             intentAvaliacao.putExtra("NOME", nomeEstacao)
             startActivity(intentAvaliacao)
         }
-
-        val layoutPrincipal = findViewById<android.view.View>(R.id.layoutPrincipalDetalhes)
-        val tipoEstacao = intent.getStringExtra("TIPO") ?: ""
-
-        when {
-            tipoEstacao.contains("Estação", ignoreCase = true) -> {
-                // MUDAR AQUI: R.color em vez de R.id
-                layoutPrincipal.setBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.fundo_estacao))
-            }
-            tipoEstacao.contains("Apeadeiro", ignoreCase = true) -> {
-                // MUDAR AQUI: R.color em vez de R.id
-                layoutPrincipal.setBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.fundo_apeadeiro))
-            }
-            else -> {
-                // MUDAR AQUI: R.color em vez de R.id
-                layoutPrincipal.setBackgroundColor(androidx.core.content.ContextCompat.getColor(this, R.color.fundo_padrao))
-            }
-        }
-
-
-
-
     }
 
     private fun carregarCronologia() {
@@ -203,7 +180,4 @@ class DetalhesActivity : AppCompatActivity() {
             .replace("\\s+".toRegex(), " ")
             .trim().uppercase()
     }
-
-
-
 }

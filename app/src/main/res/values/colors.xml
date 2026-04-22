@@ -2,8 +2,4 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="fundo_estacao">#F0F4F8</color>
-    <color name="fundo_apeadeiro">#F0FDF4</color>
-    <color name="fundo_padrao">#FFFFFF</color>
-
 </resources>
