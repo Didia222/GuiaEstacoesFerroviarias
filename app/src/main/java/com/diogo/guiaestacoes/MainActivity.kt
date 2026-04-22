@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var localizacaoAtual: Location? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         db = FirebaseFirestore.getInstance()
@@ -64,9 +64,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mapFragment.getMapAsync(this)
 
         configurarPesquisa()
-        verificarRetornoDeDetalhes(intent)
 
-        fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(this)
+
+
 
         findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabLocation).setOnClickListener {
             verificarPermissoesECentrar()
@@ -74,9 +74,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onNewIntent(intent: Intent) {
+
+
+
         super.onNewIntent(intent)
+
         setIntent(intent)
-        verificarRetornoDeDetalhes(intent)
+        if (::map.isInitialized){
+            verificarRetornoDeDetalhes(intent)
+        }
+
     }
 
     private fun verificarRetornoDeDetalhes(intent: Intent) {
@@ -90,6 +97,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun verificarPermissoesECentrar() {
+        if (!::map.isInitialized) return
         // Atenção ao != (NÃO É IGUAL A GRANTED)
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
@@ -149,38 +157,29 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     listaPesquisaTemp.add(estacao.nome)
 
                     if (estacao.latitude != 0.0) {
-                        var dentroDoRaio = true
 
-                        if (localizacaoAtual != null) {
-                            val distanciaKm = calcularDistancia(
-                                localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
-                                estacao.latitude, estacao.longitude
-                            )
-                            if (distanciaKm > 10.0) dentroDoRaio = false
+                        // LÓGICA CORRIGIDA: Não há mais "dentroDoRaio", desenhamos tudo!
+
+                        val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
+                        val tipoDetectado = when {
+                            textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
+                            textoParaAnalise.contains("paragem") || textoParaAnalise.contains("halte") -> "Apeadeiro"
+                            else -> "Estação Ferroviária"
                         }
 
-                        if (dentroDoRaio) {
-                            val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
-                            val tipoDetectado = when {
-                                textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
-                                textoParaAnalise.contains("paragem") || textoParaAnalise.contains("halte") -> "Apeadeiro"
-                                else -> "Estação Ferroviária"
-                            }
+                        val markerOptions = MarkerOptions()
+                            .position(LatLng(estacao.latitude, estacao.longitude))
+                            .title(estacao.nome)
+                            .snippet(tipoDetectado)
 
-                            val markerOptions = MarkerOptions()
-                                .position(LatLng(estacao.latitude, estacao.longitude))
-                                .title(estacao.nome)
-                                .snippet(tipoDetectado)
-
-                            // Diferenciação por cor: Apeadeiro (Azul) / Estação (Padrão/Vermelho)
-                            if (tipoDetectado == "Apeadeiro") {
-                                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                            }
-
-                            val marker = map.addMarker(markerOptions)
-                            marker?.tag = estacao
-                            if (marker != null) listaMarcadores.add(marker)
+                        // Diferenciação por cor: Apeadeiro (Azul) / Estação (Padrão/Vermelho)
+                        if (tipoDetectado == "Apeadeiro") {
+                            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         }
+
+                        val marker = map.addMarker(markerOptions)
+                        marker?.tag = estacao
+                        if (marker != null) listaMarcadores.add(marker)
                     }
                 }
                 todosOsNomesEstacoes = listaPesquisaTemp
@@ -192,6 +191,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map = googleMap
         map.setOnMarkerClickListener(this)
         ativarLocalizacaoUsuario()
+
+        verificarRetornoDeDetalhes(intent)
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
