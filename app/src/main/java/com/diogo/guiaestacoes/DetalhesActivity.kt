@@ -35,7 +35,7 @@ class DetalhesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalhes)
 
-        // 1. Recuperar dados da Intent (Mapa -> Detalhes)
+        // 1. Recuperar dados passados pela Intent
         nomeEstacao = intent.getStringExtra("NOME") ?: ""
         val tipo = intent.getStringExtra("TIPO") ?: ""
         val historia = intent.getStringExtra("HISTORIA") ?: ""
@@ -45,14 +45,13 @@ class DetalhesActivity : AppCompatActivity() {
         idEstacaoLimpo = limparTexto(nomeEstacao)
         db = FirebaseFirestore.getInstance()
 
-        // 2. Configurar Toolbar (Seta de Voltar)
+        // 2. Configurar Toolbar e Seta de Voltar
         val toolbar = findViewById<Toolbar>(R.id.toolbarDetalhes)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         toolbar.setNavigationOnClickListener {
-            // Volta para o mapa focando na estação de onde viemos
             val intentVoltar = Intent(this, MainActivity::class.java).apply {
                 putExtra("LAT_RETORNO", lat)
                 putExtra("LNG_RETORNO", lng)
@@ -62,35 +61,31 @@ class DetalhesActivity : AppCompatActivity() {
             finish()
         }
 
-        // 3. Preencher UI Básica
-        val tvTitulo = findViewById<TextView>(R.id.tvTituloDetalhe)
-        val tvTipo = findViewById<TextView>(R.id.tvTipoDetalhe)
+        // 3. Preencher Dados Básicos da UI
+        findViewById<TextView>(R.id.tvTituloDetalhe).text = nomeEstacao
+        findViewById<TextView>(R.id.tvTipoDetalhe).text = tipo
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
-
-        tvTitulo.text = nomeEstacao
-        tvTipo.text = tipo
         tvConteudo.text = historia
 
-        // 4. Configurar RecyclerView da Timeline (Linha Cronológica)
+        // 4. Configurar Recycler da Cronologia
         val rvTimeline = findViewById<RecyclerView>(R.id.rvTimeline)
         adapterTimeline = TimelineAdapter(listaEventos)
         rvTimeline.layoutManager = LinearLayoutManager(this)
         rvTimeline.adapter = adapterTimeline
 
-        // 5. Configurar RecyclerView de Comentários
+        // 5. Configurar Recycler de Comentários
         val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         rvComentarios.adapter = adapterComentarios
 
-        // 6. Carregar Dados do Firebase
+        // 6. Carregar Dados do Firestore
         carregarCronologia()
         ouvirComentarios()
 
-        // 7. Configurar Botão Ver no Mapa (Navegação GPS)
+        // 7. Botão GPS (Google Maps Navigation)
         findViewById<MaterialButton>(R.id.btnMapaDetalhe).setOnClickListener {
             val toggleModo = findViewById<MaterialButtonToggleGroup>(R.id.toggleModoTransporte)
-            // Se o botão "A pé" estiver selecionado usa modo "w" (walking), senão "d" (driving)
             val modo = if (toggleModo.checkedButtonId == R.id.btnPe) "w" else "d"
 
             val gmmIntentUri = Uri.parse("google.navigation:q=$lat,$lng&mode=$modo")
@@ -102,7 +97,7 @@ class DetalhesActivity : AppCompatActivity() {
             }
         }
 
-        // 8. Botão Expandir História
+        // 8. Expandir / Recolher História
         findViewById<ImageButton>(R.id.btnExpandirHistoria).setOnClickListener {
             if (isExpanded) {
                 tvConteudo.maxLines = 4
@@ -116,20 +111,19 @@ class DetalhesActivity : AppCompatActivity() {
 
         // 9. Botão Partilhar
         findViewById<MaterialButton>(R.id.btnPartilharDetalhe).setOnClickListener {
-            val textoPartilha = "Estou a ver a estação $nomeEstacao no Guia de Estações Ferroviárias! 🚂"
             val shareIntent = Intent().apply {
                 action = Intent.ACTION_SEND
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, textoPartilha)
+                putExtra(Intent.EXTRA_TEXT, "Estou a ver a estação $nomeEstacao na App Guia Ferroviário! 🚂")
             }
-            startActivity(Intent.createChooser(shareIntent, "Partilhar via"))
+            startActivity(Intent.createChooser(shareIntent, "Partilhar através de"))
         }
 
         // 10. Botão Abrir Avaliação
         findViewById<Button>(R.id.btnAbrirAvaliacaoDetalhes).setOnClickListener {
-            startActivity(Intent(this, AvaliacaoActivity::class.java).apply {
-                putExtra("NOME", nomeEstacao)
-            })
+            val intentAvaliacao = Intent(this, AvaliacaoActivity::class.java)
+            intentAvaliacao.putExtra("NOME", nomeEstacao)
+            startActivity(intentAvaliacao)
         }
     }
 
@@ -139,12 +133,13 @@ class DetalhesActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { snapshots ->
                 if (snapshots.isEmpty) {
-                    // Esconde a secção se não houver dados históricos
-                    findViewById<LinearLayout>(R.id.llHistoriaLabel).visibility = View.GONE
-                    findViewById<TextView>(R.id.tvConteudoDetalhe).visibility = View.GONE
+                    // Esconde apenas os elementos da timeline, mantendo o texto da história visível
                     findViewById<RecyclerView>(R.id.rvTimeline).visibility = View.GONE
                     findViewById<View>(R.id.linhaSeparadora).visibility = View.GONE
                 } else {
+                    findViewById<RecyclerView>(R.id.rvTimeline).visibility = View.VISIBLE
+                    findViewById<View>(R.id.linhaSeparadora).visibility = View.VISIBLE
+
                     listaEventos.clear()
                     for (doc in snapshots) {
                         listaEventos.add(doc.toObject(EventoHistorico::class.java))
@@ -167,11 +162,12 @@ class DetalhesActivity : AppCompatActivity() {
                 listaComentarios.sortByDescending { it.timestamp }
                 adapterComentarios.notifyDataSetChanged()
 
-                // Se não houver comentários, podemos opcionalmente mudar o texto do label
+                // Feedback visual se não houver comentários
+                val tvLabel = findViewById<TextView>(R.id.tvLabelComentarios)
                 if (listaComentarios.isEmpty()) {
-                    findViewById<TextView>(R.id.tvLabelComentarios).text = "💬  Ainda sem comentários"
+                    tvLabel.text = "💬  Ainda sem comentários"
                 } else {
-                    findViewById<TextView>(R.id.tvLabelComentarios).text = "💬  Comentários e Fotos"
+                    tvLabel.text = "💬  Comentários e Fotos"
                 }
             }
     }
@@ -180,6 +176,8 @@ class DetalhesActivity : AppCompatActivity() {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
         return "\\p{InCombiningDiacriticalMarks}+".toRegex()
             .replace(normalizado, "")
-            .replace("-", " ").replace("\\s+".toRegex(), " ").trim().uppercase()
+            .replace("-", " ")
+            .replace("\\s+".toRegex(), " ")
+            .trim().uppercase()
     }
 }

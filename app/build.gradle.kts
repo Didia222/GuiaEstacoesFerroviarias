@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
     alias(libs.plugins.google.gms.google.services)
+    id("com.google.firebase.crashlytics")
+
 }
 
 android {
@@ -51,12 +53,15 @@ android {
     }
 }
 
+
+
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
@@ -88,4 +93,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+
 }

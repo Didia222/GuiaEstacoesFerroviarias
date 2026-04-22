@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.database.MatrixCursor
-import android.location.Location // NOVA IMPORTAÇÃO
+import android.location.Location
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.widget.Button
@@ -22,6 +22,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -29,7 +30,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import java.text.Normalizer
-import kotlin.math.* // NOVA IMPORTAÇÃO PARA A FÓRMULA MATEMÁTICA
+import kotlin.math.*
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -43,11 +44,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val listaMarcadores = mutableListOf<Marker>()
     private lateinit var db: FirebaseFirestore
 
-    // Variável para guardar o GPS do telemóvel
     private var localizacaoAtual: Location? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_main)
 
         db = FirebaseFirestore.getInstance()
@@ -81,10 +81,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    // --- NOVA FUNÇÃO: FÓRMULA DE HAVERSINE ---
-    // Calcula a distância real em linha reta entre dois pontos na Terra (em km)
     private fun calcularDistancia(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0 // Raio da Terra em KM
+        val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
         val a = sin(dLat / 2).pow(2) +
@@ -99,19 +97,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (error != null) return@addSnapshotListener
 
             if (snapshots != null) {
-                val listaMapaTemp = mutableListOf<Estacao>() // Para o mapa (filtrado)
-                val listaPesquisaTemp = mutableListOf<String>() // Para a pesquisa (todas)
+                val listaPesquisaTemp = mutableListOf<String>()
+                listaEstacoesOficiais = snapshots.toObjects(Estacao::class.java)
 
                 map.clear()
                 listaMarcadores.clear()
 
-                for (document in snapshots) {
-                    val estacao = document.toObject(Estacao::class.java)
-
-                    // 1. Guardamos SEMPRE o nome para a pesquisa
+                for (estacao in listaEstacoesOficiais) {
                     listaPesquisaTemp.add(estacao.nome)
 
-                    // 2. Lógica do Mapa (Pins vermelhos) - Só se tiver coordenadas
                     if (estacao.latitude != 0.0) {
                         var dentroDoRaio = true
 
@@ -120,14 +114,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
                                 estacao.latitude, estacao.longitude
                             )
-                            if (distanciaKm > 10.0) {
-                                dentroDoRaio = false
-                            }
+                            if (distanciaKm > 10.0) dentroDoRaio = false
                         }
 
                         if (dentroDoRaio) {
-                            listaMapaTemp.add(estacao)
-
                             val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
                             val tipoDetectado = when {
                                 textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
@@ -135,20 +125,23 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 else -> "Estação Ferroviária"
                             }
 
-                            val marker = map.addMarker(MarkerOptions()
+                            val markerOptions = MarkerOptions()
                                 .position(LatLng(estacao.latitude, estacao.longitude))
                                 .title(estacao.nome)
-                                .snippet(tipoDetectado))
+                                .snippet(tipoDetectado)
 
+                            // Diferenciação por cor: Apeadeiro (Azul) / Estação (Padrão/Vermelho)
+                            if (tipoDetectado == "Apeadeiro") {
+                                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                            }
+
+                            val marker = map.addMarker(markerOptions)
                             marker?.tag = estacao
                             if (marker != null) listaMarcadores.add(marker)
                         }
                     }
                 }
-
-                // ATUALIZAÇÃO DAS LISTAS
-                listaEstacoesOficiais = snapshots.toObjects(Estacao::class.java) // Guardamos todas as estações
-                todosOsNomesEstacoes = listaPesquisaTemp // A pesquisa agora tem TUDO!
+                todosOsNomesEstacoes = listaPesquisaTemp
             }
         }
     }
@@ -157,8 +150,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map = googleMap
         map.setOnMarkerClickListener(this)
         ativarLocalizacaoUsuario()
-        // O carregarDados() agora é chamado por dentro do ativarLocalizacaoUsuario()
-        // para garantirmos que só carrega as estações depois de ter o teu GPS!
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
@@ -167,8 +158,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val view = layoutInflater.inflate(R.layout.layout_detalhes_estacao, null)
         dialog.setContentView(view)
 
+        var distanciaTexto = ""
+        if (localizacaoAtual != null && estacao != null) {
+            val km = calcularDistancia(
+                localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
+                estacao.latitude, estacao.longitude
+            )
+            distanciaTexto = " (a ${String.format("%.1f", km)} km de ti)"
+        }
+
         view.findViewById<TextView>(R.id.tvNomeEstacao).text = marker.title
-        view.findViewById<TextView>(R.id.tvDescricao).text = marker.snippet
+        view.findViewById<TextView>(R.id.tvDescricao).text = "${marker.snippet}$distanciaTexto"
 
         view.findViewById<Button>(R.id.btnVerMais).setOnClickListener {
             val intent = Intent(this, DetalhesActivity::class.java).apply {
@@ -190,18 +190,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         view.findViewById<Button>(R.id.btnGaleria).setOnClickListener {
-            val intent = Intent(this, GaleriaActivity::class.java).apply {
+            startActivity(Intent(this, GaleriaActivity::class.java).apply {
                 putExtra("NOME", marker.title)
-            }
-            startActivity(intent)
+            })
             dialog.dismiss()
         }
 
         view.findViewById<Button>(R.id.btnAvaliar).setOnClickListener {
-            val intent = Intent(this, AvaliacaoActivity::class.java).apply {
+            startActivity(Intent(this, AvaliacaoActivity::class.java).apply {
                 putExtra("NOME", marker.title)
-            }
-            startActivity(intent)
+            })
             dialog.dismiss()
         }
 
@@ -214,18 +212,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             map.isMyLocationEnabled = true
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 loc?.let {
-                    // Guardamos a tua localização!
                     localizacaoAtual = it
                     map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 12f))
                 }
-                // Só depois de descobrir onde estás é que disparamos o download e o filtro
                 carregarDados()
-            }.addOnFailureListener {
-                carregarDados() // Se o GPS falhar, carrega tudo sem filtro
-            }
+            }.addOnFailureListener { carregarDados() }
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
-            carregarDados() // Se não deste permissão, carrega tudo sem filtro
+            carregarDados()
         }
     }
 
@@ -251,16 +245,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
 
         searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
-            override fun onSuggestionSelect(position: Int): Boolean {
-                return false
-            }
-
-            override fun onSuggestionClick(position: Int): Boolean {
+            override fun onSuggestionSelect(p: Int): Boolean = false
+            override fun onSuggestionClick(p: Int): Boolean {
                 val cursor = sugestoesAdapter.cursor as Cursor
-                if (cursor.moveToPosition(position)) {
-                    val nomeEstacaoClicada = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
-                    searchView.setQuery(nomeEstacaoClicada, false)
-                    procurarEstacaoNoMapa(nomeEstacaoClicada)
+                if (cursor.moveToPosition(p)) {
+                    val nome = cursor.getString(cursor.getColumnIndexOrThrow("estacaoNome"))
+                    searchView.setQuery(nome, false)
+                    procurarEstacaoNoMapa(nome)
                     searchView.clearFocus()
                 }
                 return true
@@ -272,16 +263,32 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val cursor = MatrixCursor(arrayOf(BaseColumns._ID, "estacaoNome"))
         if (!query.isNullOrBlank()) {
             val q = normalizarTexto(query)
-            todosOsNomesEstacoes.filter { normalizarTexto(it).contains(q) }.forEachIndexed { i, nome -> cursor.addRow(arrayOf(i, nome)) }
+            todosOsNomesEstacoes.filter { normalizarTexto(it).contains(q) }
+                .forEachIndexed { i, nome -> cursor.addRow(arrayOf(i, nome)) }
         }
         sugestoesAdapter.changeCursor(cursor)
     }
 
     private fun procurarEstacaoNoMapa(nome: String) {
         val q = normalizarTexto(nome)
-        listaMarcadores.find { normalizarTexto(it.title ?: "").contains(q) }?.let {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position, 15f))
-            it.showInfoWindow()
+        val marcadorExistente = listaMarcadores.find { normalizarTexto(it.title ?: "").contains(q) }
+
+        if (marcadorExistente != null) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(marcadorExistente.position, 15f))
+            marcadorExistente.showInfoWindow()
+        } else {
+            val estacaoLonge = listaEstacoesOficiais.find { normalizarTexto(it.nome).contains(q) }
+            estacaoLonge?.let {
+                val loc = LatLng(it.latitude, it.longitude)
+                val novoMarker = map.addMarker(MarkerOptions()
+                    .position(loc)
+                    .title(it.nome)
+                    .snippet("Fora do raio de 10km")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)))
+                novoMarker?.tag = it
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 15f))
+                novoMarker?.showInfoWindow()
+            }
         }
     }
 }
