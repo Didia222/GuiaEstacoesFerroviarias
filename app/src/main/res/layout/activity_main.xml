@@ -14,12 +14,15 @@
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewEstacoes"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_margin="16dp"
-        android:background="@android:color/white"
-        android:elevation="4dp"
+        android:background="@drawable/bg_search_bar"
+        android:elevation="8dp"
         android:iconifiedByDefault="false"
-        android:queryHint="Pesquisar estação..." />
+        app:queryBackground="@android:color/transparent"
+        app:submitBackground="@android:color/transparent"
+        app:iconifiedByDefault="false"
+        app:queryHint="Pesquisar Estação..." />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabLocation"
