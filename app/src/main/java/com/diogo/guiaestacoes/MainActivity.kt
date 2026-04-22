@@ -1,6 +1,7 @@
 package com.diogo.guiaestacoes
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var todosOsNomesEstacoes: List<String> = emptyList()
     private var listaEstacoesOficiais: List<Estacao> = emptyList()
 
+
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -63,6 +65,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
         verificarRetornoDeDetalhes(intent)
+
+        fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(this)
+
+        findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabLocation).setOnClickListener {
+            verificarPermissoesECentrar()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -80,6 +88,40 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             listaMarcadores.find { it.position == localizacao }?.showInfoWindow()
         }
     }
+
+    private fun verificarPermissoesECentrar() {
+        // Atenção ao != (NÃO É IGUAL A GRANTED)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            return
+        }
+
+        // Se chegou aqui, é porque tem permissão!
+        map.isMyLocationEnabled = true
+        map.uiSettings.isMyLocationButtonEnabled = false
+
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                val latLng = LatLng(location.latitude, location.longitude)
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     private fun calcularDistancia(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0
