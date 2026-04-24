@@ -125,6 +125,39 @@ class DetalhesActivity : AppCompatActivity() {
             intentAvaliacao.putExtra("NOME", nomeEstacao)
             startActivity(intentAvaliacao)
         }
+
+        val cardFundo = findViewById<androidx.cardview.widget.CardView>(R.id.cardDetalhes)
+
+        val tipoEstacao = intent.getStringExtra("TIPO") ?: ""
+        when {
+            tipoEstacao.contains("Estação", ignoreCase = true) -> {
+                cardFundo.setCardBackgroundColor(
+                    androidx.core.content.ContextCompat.getColor(
+                        this,
+                        R.color.fundo_estacao
+                    )
+                )
+            }
+
+            tipoEstacao.contains("Apeadeiro", ignoreCase = true) -> {
+                cardFundo.setCardBackgroundColor(
+                    androidx.core.content.ContextCompat.getColor(
+                        this,
+                        R.color.fundo_apeadeiro
+                    )
+                )
+            }
+
+            else -> {
+                cardFundo.setCardBackgroundColor(
+                    androidx.core.content.ContextCompat.getColor(
+                        this,
+                        R.color.fundo_padrao
+                    )
+                )
+            }
+
+        }
     }
 
     private fun carregarCronologia() {
