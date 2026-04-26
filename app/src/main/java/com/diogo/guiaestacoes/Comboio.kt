@@ -1,7 +1,6 @@
 package com.diogo.guiaestacoes
 import java.io.Serializable
 
-// Adiciona "Serializable" aqui e nas Paragens
 data class Comboio(
     val numero: String = "",
     val tipo: String = "",

@@ -1,15 +1,12 @@
 package com.diogo.guiaestacoes
-
-import androidx.annotation.Keep
 import java.io.Serializable
 
-@Keep // <-- ESTA É A ETIQUETA MÁGICA
 data class Comentario(
-    var id_comentario: String = "",
-    var id_estacao: String = "",
-    var autor: String = "Viajante Anónimo",
-    var texto: String = "",
-    var url_foto: String = "",
-    var timestamp: Long = System.currentTimeMillis(),
-    var estrelas: Float = 0f
+    val id_comentario: String = "",
+    val id_estacao: String = "",
+    val autor: String = "Viajante Anónimo",
+    val texto: String = "",
+    val estrelas: Float = 0f,
+    val timestamp: Long = 0,
+    val url_foto: String? = null
 ) : Serializable

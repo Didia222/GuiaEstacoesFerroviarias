@@ -16,7 +16,6 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ComboioAdapter
     private lateinit var svPesquisaHorarios: SearchView
-
     private var nomeEstacaoGlobal: String = ""
     private var todosOsComboiosDaEstacao = listOf<Comboio>()
 
@@ -24,7 +23,6 @@ class HorariosActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_horarios)
 
-        // Configuração da Toolbar
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarHorarios)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -32,7 +30,6 @@ class HorariosActivity : AppCompatActivity() {
         nomeEstacaoGlobal = intent.getStringExtra("ESTACAO_NOME") ?: ""
         supportActionBar?.title = "Horários: $nomeEstacaoGlobal"
 
-        // Inicializar Views
         recyclerView = findViewById(R.id.recyclerViewHorarios)
         svPesquisaHorarios = findViewById(R.id.svPesquisaHorarios)
 
@@ -40,84 +37,57 @@ class HorariosActivity : AppCompatActivity() {
         adapter = ComboioAdapter(emptyList(), nomeEstacaoGlobal)
         recyclerView.adapter = adapter
 
-        if (nomeEstacaoGlobal.isNotEmpty()) {
-            carregarComboiosOtimizado(nomeEstacaoGlobal)
-        }
+        if (nomeEstacaoGlobal.isNotEmpty()) carregarComboios(nomeEstacaoGlobal)
 
-        configurarPesquisa()
-    }
-
-    private fun limparTexto(texto: String): String {
-        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
-            .replace(normalizado, "").uppercase().trim()
-    }
-
-    private fun carregarComboiosOtimizado(nomeEstacao: String) {
-        val nomeBusca = limparTexto(nomeEstacao)
-
-        // RF-5: Pesquisa direta no campo estacoes_servidas (muito mais rápido)
-        db.collection("Comboio")
-            .whereArrayContains("estacoes_servidas", nomeBusca)
-            .get()
-            .addOnSuccessListener { documents ->
-                val lista = documents.toObjects(Comboio::class.java)
-                todosOsComboiosDaEstacao = lista
-                exibirResultados(todosOsComboiosDaEstacao)
-            }
-            .addOnFailureListener { e ->
-                Log.e("HorariosActivity", "Erro Firebase", e)
-                Toast.makeText(this, "Erro ao carregar horários", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun configurarPesquisa() {
         svPesquisaHorarios.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = true
             override fun onQueryTextChange(newText: String?): Boolean {
-                filtrarNaMemoria(newText ?: "")
+                filtrar(newText ?: "")
                 return true
             }
         })
     }
 
-    private fun filtrarNaMemoria(texto: String) {
-        if (texto.isEmpty()) {
-            exibirResultados(todosOsComboiosDaEstacao)
-            return
-        }
-
-        val busca = limparTexto(texto)
-        val filtrados = todosOsComboiosDaEstacao.filter { comboio ->
-            comboio.numero.contains(busca) || comboio.destino.contains(busca, ignoreCase = true)
-        }
-        exibirResultados(filtrados)
+    private fun carregarComboios(nome: String) {
+        db.collection("Comboio")
+            .whereArrayContains("estacoes_servidas", limparTexto(nome))
+            .get()
+            .addOnSuccessListener {
+                todosOsComboiosDaEstacao = it.toObjects(Comboio::class.java)
+                exibirResultados(todosOsComboiosDaEstacao)
+            }
     }
 
-    private fun exibirResultados(lista: List<Comboio>) {
+    private fun filtrar(texto: String) {
+        val busca = limparTexto(texto)
+        val filtrados = if (texto.isEmpty()) todosOsComboiosDaEstacao
+        else todosOsComboiosDaEstacao.filter { c ->
+            c.numero.contains(busca) || c.estacoes_servidas.any { it.contains(busca) }
+        }
+        exibirResultados(filtrados, texto)
+    }
+
+    private fun exibirResultados(lista: List<Comboio>, busca: String = "") {
         val finalItems = mutableListOf<Any>()
         val estacaoLimpa = limparTexto(nomeEstacaoGlobal)
 
-        // Agrupar por tipo e ordenar por hora de passagem
         lista.groupBy { it.tipo }.forEach { (tipo, comboios) ->
             finalItems.add(getTipoExtenso(tipo))
             finalItems.addAll(comboios.sortedBy { c ->
                 c.paragens.find { limparTexto(it.estacao) == estacaoLimpa }?.hora
             })
         }
-        adapter.atualizarLista(finalItems, nomeEstacaoGlobal)
+        adapter.atualizarLista(finalItems, nomeEstacaoGlobal, busca)
     }
 
-    private fun getTipoExtenso(tipo: String?): String = when(tipo) {
-        "AP" -> "Alfa Pendular"
-        "IC" -> "Intercidades"
-        "R" -> "Regional"
-        "U" -> "Urbano"
-        else -> "Outros Serviços"
+    private fun getTipoExtenso(t: String?): String = when(t) {
+        "AP" -> "Alfa Pendular"; "IC" -> "Intercidades"; "R" -> "Regional"; "U" -> "Urbano"; else -> "Outros"
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
+    private fun limparTexto(t: String): String {
+        val n = Normalizer.normalize(t, Normalizer.Form.NFD)
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(n, "").uppercase().trim()
     }
+
+    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }

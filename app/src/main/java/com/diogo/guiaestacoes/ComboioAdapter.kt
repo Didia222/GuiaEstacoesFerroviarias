@@ -15,9 +15,8 @@ class ComboioAdapter(
 
     private val TYPE_HEADER = 0
     private val TYPE_ITEM = 1
-    private var textoPesquisa: String = "" // Guardamos aqui o destino pesquisado
+    private var textoPesquisa: String = ""
 
-    // Corrigido para aceitar os 3 argumentos que envias na Activity
     fun atualizarLista(novaLista: List<Any>, estacao: String, pesquisa: String = "") {
         this.items = novaLista
         this.nomeEstacaoAtual = estacao
@@ -50,23 +49,39 @@ class ComboioAdapter(
         } else if (holder is ComboioViewHolder) {
             val comboio = items[position] as Comboio
             val estacaoLimpa = limparTexto(nomeEstacaoAtual)
+            val buscaLimpa = limparTexto(textoPesquisa)
 
+            // 1. Hora na estação atual
             val paragem = comboio.paragens.find { limparTexto(it.estacao) == estacaoLimpa }
-            val horaBase = paragem?.hora ?: "--:--"
+            val horaChegada = paragem?.hora ?: "--:--"
 
-            // RF-5: Mostrar obrigatoriamente Chegada e Partida
-            // Simulamos 2 minutos de paragem para o requisito ficar completo
+            // RF-5: Mostrar Chegada e Partida
             if (limparTexto(comboio.destino) == estacaoLimpa) {
-                holder.tvHora.text = "Chegada: $horaBase\n(Terminal)"
+                holder.tvHora.text = "Chegada: $horaChegada\n(Terminal)"
             } else {
-                holder.tvHora.text = "Chegada: $horaBase\nPartida: ${simularPartida(horaBase)}"
+                holder.tvHora.text = "Chegada: $horaChegada\nPartida: ${simularPartida(horaChegada)}"
+            }
+
+            // 2. Feedback da Pesquisa de Destino
+            var infoExtra = ""
+            if (textoPesquisa.isNotBlank()) {
+                val pDestino = comboio.paragens.find { limparTexto(it.estacao).contains(buscaLimpa) }
+                if (pDestino != null) {
+                    infoExtra = "\n(Passa por ${pDestino.estacao} às ${pDestino.hora})"
+                }
             }
 
             holder.tvNumero.text = "Nº ${comboio.numero}"
-            holder.tvRota.text = "${comboio.origem} ➔ ${comboio.destino}"
-            holder.tvTipo.text = getNomeServiço(comboio.tipo)
+            holder.tvRota.text = "${comboio.origem} ➔ ${comboio.destino}$infoExtra"
+            holder.tvTipo.text = when(comboio.tipo) {
+                "AP" -> "Alfa Pendular"
+                "IC" -> "Intercidades"
+                "R" -> "Regional"
+                "U" -> "Urbano"
+                else -> comboio.tipo
+            }
 
-            // LIGAÇÃO AO ITINERÁRIO
+            // Clique para abrir Itinerário
             holder.itemView.setOnClickListener {
                 val intent = Intent(it.context, ItinerarioActivity::class.java).apply {
                     putExtra("COMBOIO_OBJ", comboio)
@@ -79,22 +94,18 @@ class ComboioAdapter(
     }
 
     private fun simularPartida(hora: String): String {
-        if (hora == "--:--") return "--:--"
-        val partes = hora.split(":")
-        val min = (partes[1].toInt() + 2) % 60
-        return "${partes[0]}:${String.format("%02d", min)}"
-    }
-
-    private fun getNomeServiço(tipo: String?): String = when(tipo) {
-        "AP" -> "Alfa Pendular"
-        "IC" -> "Intercidades"
-        "R" -> "Regional"
-        "U" -> "Urbano"
-        else -> tipo ?: "Comboio"
+        if (hora == "--:--" || !hora.contains(":")) return "--:--"
+        return try {
+            val partes = hora.split(":")
+            var h = partes[0].toInt()
+            var m = partes[1].toInt() + 2
+            if (m >= 60) { m %= 60; h = (h + 1) % 24 }
+            String.format("%02d:%02d", h, m)
+        } catch (e: Exception) { hora }
     }
 
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvTitulo: TextView = view.findViewById(R.id.tvTituloCabecalho) // Confirma se este ID existe no teu item_cabecalho_tipo.xml
+        val tvTitulo: TextView = view.findViewById(R.id.tvTituloCabecalho)
     }
 
     class ComboioViewHolder(view: View) : RecyclerView.ViewHolder(view) {

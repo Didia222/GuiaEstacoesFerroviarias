@@ -84,6 +84,16 @@
                 android:hint="O que achaste da estação?"
                 android:padding="12dp"
                 android:inputType="textMultiLine"
+                android:maxLength="200"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Máximo 200 caracteres"
+                android:textSize="11sp"
+                android:textColor="#888888"
+                android:gravity="end"
                 android:layout_marginBottom="16dp" />
 
             <LinearLayout

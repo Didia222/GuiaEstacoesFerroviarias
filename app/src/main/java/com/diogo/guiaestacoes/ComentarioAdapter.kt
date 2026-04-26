@@ -11,7 +11,7 @@ import com.bumptech.glide.Glide
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ComentarioAdapter(private val lista: List<Comentario>) :
+class ComentarioAdapter(private var lista: List<Comentario>) :
     RecyclerView.Adapter<ComentarioAdapter.ComentarioViewHolder>() {
 
     class ComentarioViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -22,6 +22,11 @@ class ComentarioAdapter(private val lista: List<Comentario>) :
         val ivFoto: ImageView = v.findViewById(R.id.ivFotoItem)
     }
 
+    fun atualizar(novaLista: List<Comentario>) {
+        this.lista = novaLista
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ComentarioViewHolder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_comentario, parent, false)
         return ComentarioViewHolder(v)
@@ -29,26 +34,17 @@ class ComentarioAdapter(private val lista: List<Comentario>) :
 
     override fun onBindViewHolder(holder: ComentarioViewHolder, position: Int) {
         val c = lista[position]
-
         holder.tvAutor.text = c.autor
         holder.tvTexto.text = c.texto
         holder.rbEstrelas.rating = c.estrelas
 
-        // Formatar a data (ex: 12/04/2026 15:30)
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         holder.tvData.text = sdf.format(Date(c.timestamp))
 
-        // --- LÓGICA DA FOTO ---
         if (!c.url_foto.isNullOrEmpty()) {
             holder.ivFoto.visibility = View.VISIBLE
-
-            Glide.with(holder.itemView.context)
-                .load(c.url_foto)
-                .placeholder(R.drawable.ic_launcher_background) // Imagem enquanto carrega
-                .error(android.R.drawable.stat_notify_error)   // Se houver erro
-                .into(holder.ivFoto)
+            Glide.with(holder.itemView.context).load(c.url_foto).into(holder.ivFoto)
         } else {
-            // Se não houver foto, escondemos a ImageView para não ficar um buraco vazio
             holder.ivFoto.visibility = View.GONE
         }
     }
