@@ -155,43 +155,74 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 listaMarcadores.clear()
 
                 for (estacao in listaEstacoesOficiais) {
+                    // Adicionamos sempre o nome à lista de pesquisa (para a pessoa poder pesquisar mesmo estações longe)
                     listaPesquisaTemp.add(estacao.nome)
 
                     if (estacao.latitude != 0.0) {
 
-                        // LÓGICA CORRIGIDA: Não há mais "dentroDoRaio", desenhamos tudo!
+                        // 1. LÓGICA REPOSTA: O Filtro dos 10km (RF-1)
+                        var dentroDoRaio = true // Por defeito, assumimos que está dentro
 
-                        val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
-                        val tipoDetectado = when {
-                            textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
-                            textoParaAnalise.contains("paragem") || textoParaAnalise.contains("halte") -> "Apeadeiro"
-                            else -> "Estação Ferroviária"
+                        // Se o telemóvel já tiver o GPS trancado, calculamos a distância
+                        if (localizacaoAtual != null) {
+                            val distanciaKm = calcularDistancia(
+                                localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
+                                estacao.latitude, estacao.longitude
+                            )
+                            // Só é válido se for menor ou igual a 10 km
+                            dentroDoRaio = distanciaKm <= 10.0
                         }
 
-                        val markerOptions = MarkerOptions()
-                            .position(LatLng(estacao.latitude, estacao.longitude))
-                            .title(estacao.nome)
-                            .snippet(tipoDetectado)
+                        // 2. Só desenha o pino no mapa SE estiver dentro do raio!
+                        if (dentroDoRaio) {
+                            val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
+                            val tipoDetectado = when {
+                                textoParaAnalise.contains("apeadeiro") -> "Apeadeiro"
+                                textoParaAnalise.contains("paragem") || textoParaAnalise.contains("halte") -> "Apeadeiro"
+                                else -> "Estação Ferroviária"
+                            }
 
-                        // Diferenciação por cor: Apeadeiro (Azul) / Estação (Padrão/Vermelho)
-                        if (tipoDetectado == "Apeadeiro") {
-                            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                            val markerOptions = MarkerOptions()
+                                .position(LatLng(estacao.latitude, estacao.longitude))
+                                .title(estacao.nome)
+                                .snippet(tipoDetectado)
+
+                            // Diferenciação por cor: Apeadeiro (Azul) / Estação (Vermelho)
+                            if (tipoDetectado == "Apeadeiro") {
+                                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                            }
+
+                            val marker = map.addMarker(markerOptions)
+                            marker?.tag = estacao
+                            if (marker != null) listaMarcadores.add(marker)
                         }
-
-                        val marker = map.addMarker(markerOptions)
-                        marker?.tag = estacao
-                        if (marker != null) listaMarcadores.add(marker)
                     }
                 }
                 todosOsNomesEstacoes = listaPesquisaTemp
+
+                // Mantém os filtros dos Chips a funcionar corretamente com as novas estações
+                val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
+                if (chipGroup != null) {
+                    filtrarMarcadoresNoMapa(chipGroup.checkedChipId)
+                }
             }
         }
     }
+
+
+
+
+
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.setOnMarkerClickListener(this)
         ativarLocalizacaoUsuario()
+        val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
+        chipGroup?.setOnCheckedChangeListener { _, checkedId ->
+            filtrarMarcadoresNoMapa(checkedId)
+        }
 
         verificarRetornoDeDetalhes(intent)
     }
@@ -332,6 +363,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 novoMarker?.tag = it
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 15f))
                 novoMarker?.showInfoWindow()
+            }
+
+        }
+    }
+    private fun filtrarMarcadoresNoMapa(chipId: Int) {
+        for (marker in listaMarcadores) {
+            val tipoMarcador = marker.snippet ?: ""
+
+            // Oculta ou mostra os pinos no mapa dependendo do filtro selecionado
+            when (chipId) {
+                R.id.chipTodas -> marker.isVisible = true
+                R.id.chipEstacoes -> marker.isVisible = tipoMarcador.contains("Estação", ignoreCase = true)
+                R.id.chipApeadeiros -> marker.isVisible = tipoMarcador.contains("Apeadeiro", ignoreCase = true)
             }
         }
     }

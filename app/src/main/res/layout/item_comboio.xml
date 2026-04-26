@@ -3,65 +3,61 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation ="4dp">
+    app:cardElevation="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp" >
+        android:padding="16dp">
 
         <TextView
-            android:id="@+id/txtNumero"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:background="@drawable/circle_background"
-            android:gravity="center"
-            android:text="15401"
-            android:textColor="#FFFFFF"
+            android:id="@+id/tvHoraComboio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="08:30"
+            android:textColor="@color/black"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="16dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/txtTipo"
+                android:id="@+id/tvRotaComboio"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Regional"
-                android:textColor="#757575"
-                android:textSize="12sp" />
-            <TextView
-                android:id="@+id/txtRota"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Porto -> Marco"
-                android:textColor="#212121"
+                android:text="Porto -> Lisboa"
+                android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNumeroComboio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Comboio nº 123"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <TextView
-            android:id="@+id/txtHoraPartida"
+            android:id="@+id/tvTipoServico"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="14:20"
-            android:textColor="#0D47A1"
-            android:textSize="18sp"
+            android:background="#EEEEEE"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="Regional"
+            android:textColor="#555555"
+            android:textSize="12sp"
             android:textStyle="bold" />
-
-
-
-
-
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>
-
-
