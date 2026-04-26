@@ -67,6 +67,8 @@ class DetalhesActivity : AppCompatActivity() {
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
         tvConteudo.text = historia
 
+
+
         // 4. Configurar Recycler da Cronologia
         val rvTimeline = findViewById<RecyclerView>(R.id.rvTimeline)
         adapterTimeline = TimelineAdapter(listaEventos)
