@@ -6,6 +6,9 @@ import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.text.Normalizer
@@ -31,13 +34,26 @@ class AvaliacaoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_avaliacao)
 
+        // 1. Configurar Toolbar e Seta de Voltar
+        val toolbar = findViewById<Toolbar>(R.id.toolbarAvaliacao)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = ""
+
+        // CORREÇÃO: Forçar o clique na seta de voltar
+        toolbar.setNavigationOnClickListener { finish() }
+
+        // CORREÇÃO: Empurrar a barra para baixo da câmara (Notch)
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            v.setPadding(0, statusBars.top, 0, 0)
+            insets
+        }
+
         val nomeEstacao = intent.getStringExtra("NOME") ?: ""
         idEstacaoLimpo = limparTexto(nomeEstacao)
 
-        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarAvaliacao)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { finish() }
+        findViewById<TextView>(R.id.tvTituloAvaliacao).text = "Avaliar $nomeEstacao"
 
         val etComentario = findViewById<EditText>(R.id.etComentarioAvaliacao)
         val btnGuardar = findViewById<Button>(R.id.btnGuardarAvaliacao)
