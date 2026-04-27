@@ -1,7 +1,6 @@
 package com.diogo.guiaestacoes
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -40,7 +39,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var todosOsNomesEstacoes: List<String> = emptyList()
     private var listaEstacoesOficiais: List<Estacao> = emptyList()
 
-
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -67,25 +65,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         configurarPesquisa()
 
-
-
-
         findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabLocation).setOnClickListener {
             verificarPermissoesECentrar()
         }
     }
 
     override fun onNewIntent(intent: Intent) {
-
-
-
         super.onNewIntent(intent)
-
         setIntent(intent)
         if (::map.isInitialized){
             verificarRetornoDeDetalhes(intent)
         }
-
     }
 
     private fun verificarRetornoDeDetalhes(intent: Intent) {
@@ -100,7 +90,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun verificarPermissoesECentrar() {
         if (!::map.isInitialized) return
-        // Atenção ao != (NÃO É IGUAL A GRANTED)
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                 this,
@@ -110,7 +99,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             return
         }
 
-        // Se chegou aqui, é porque tem permissão!
         map.isMyLocationEnabled = true
         map.uiSettings.isMyLocationButtonEnabled = false
 
@@ -121,17 +109,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
 
     private fun calcularDistancia(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0
@@ -156,25 +133,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 listaMarcadores.clear()
 
                 for (estacao in listaEstacoesOficiais) {
-                    // Adicionamos sempre o nome à lista de pesquisa (para a pessoa poder pesquisar mesmo estações longe)
                     listaPesquisaTemp.add(estacao.nome)
 
                     if (estacao.latitude != 0.0) {
+                        var dentroDoRaio = true
 
-                        // 1. LÓGICA REPOSTA: O Filtro dos 10km (RF-1)
-                        var dentroDoRaio = true // Por defeito, assumimos que está dentro
-
-                        // Se o telemóvel já tiver o GPS trancado, calculamos a distância
                         if (localizacaoAtual != null) {
                             val distanciaKm = calcularDistancia(
                                 localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
                                 estacao.latitude, estacao.longitude
                             )
-                            // Só é válido se for menor ou igual a 10 km
                             dentroDoRaio = distanciaKm <= 10.0
                         }
 
-                        // 2. Só desenha o pino no mapa SE estiver dentro do raio!
                         if (dentroDoRaio) {
                             val textoParaAnalise = (estacao.nome + " " + estacao.Discricao_hist).lowercase()
                             val tipoDetectado = when {
@@ -188,7 +159,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 .title(estacao.nome)
                                 .snippet(tipoDetectado)
 
-                            // Diferenciação por cor: Apeadeiro (Azul) / Estação (Vermelho)
                             if (tipoDetectado == "Apeadeiro") {
                                 markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                             }
@@ -201,7 +171,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 }
                 todosOsNomesEstacoes = listaPesquisaTemp
 
-                // Mantém os filtros dos Chips a funcionar corretamente com as novas estações
                 val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
                 if (chipGroup != null) {
                     filtrarMarcadoresNoMapa(chipGroup.checkedChipId)
@@ -210,18 +179,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-
-
-
-
-
-
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.setOnMarkerClickListener(this)
         ativarLocalizacaoUsuario()
         val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
         chipGroup?.setOnCheckedChangeListener { _, checkedId ->
+            // Se o utilizador mexer nos chips, limpamos a pesquisa e aplicamos os filtros
+            val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
+            searchView.setQuery("", false)
             filtrarMarcadoresNoMapa(checkedId)
         }
 
@@ -305,6 +271,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun configurarPesquisa() {
         val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
+
+        // Mantém a barra aberta
+        searchView.setIconifiedByDefault(false)
+        searchView.queryHint = "Pesquisar estação..."
+
         sugestoesAdapter = SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, arrayOf("estacaoNome"), intArrayOf(android.R.id.text1), CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER)
         searchView.suggestionsAdapter = sugestoesAdapter
 
@@ -316,6 +287,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
             override fun onQueryTextChange(n: String?): Boolean {
                 filtrarSugestoes(n)
+                // Atualiza o mapa ao vivo à medida que o utilizador digita
+                n?.let { filtrarMarcadoresNoMapaLive(it) }
                 return true
             }
         })
@@ -365,9 +338,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 15f))
                 novoMarker?.showInfoWindow()
             }
-
         }
     }
+
     private fun filtrarMarcadoresNoMapa(chipId: Int) {
         for (marker in listaMarcadores) {
             val tipoMarcador = marker.snippet ?: ""
@@ -378,6 +351,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 R.id.chipEstacoes -> marker.isVisible = tipoMarcador.contains("Estação", ignoreCase = true)
                 R.id.chipApeadeiros -> marker.isVisible = tipoMarcador.contains("Apeadeiro", ignoreCase = true)
             }
+        }
+    }
+
+    // NOVA FUNÇÃO: Filtra o mapa dinamicamente com base no texto digitado
+    private fun filtrarMarcadoresNoMapaLive(query: String) {
+        val textoPesquisa = normalizarTexto(query)
+
+        val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
+        val chipIdSelecionado = chipGroup?.checkedChipId ?: R.id.chipTodas
+
+        for (marker in listaMarcadores) {
+            val tipoMarcador = marker.snippet ?: ""
+            val nomeMarcador = normalizarTexto(marker.title ?: "")
+
+            val correspondeAoTexto = textoPesquisa.isEmpty() || nomeMarcador.contains(textoPesquisa)
+
+            val correspondeAoFiltro = when (chipIdSelecionado) {
+                R.id.chipTodas -> true
+                R.id.chipEstacoes -> tipoMarcador.contains("Estação", ignoreCase = true)
+                R.id.chipApeadeiros -> tipoMarcador.contains("Apeadeiro", ignoreCase = true)
+                else -> true
+            }
+
+            marker.isVisible = correspondeAoTexto && correspondeAoFiltro
         }
     }
 }
