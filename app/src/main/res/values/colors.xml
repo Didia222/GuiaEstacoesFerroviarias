@@ -2,6 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="azul_azulejo">#0055A4</color>
+    <color name="azul_azulejo_escuro">#003366</color>
+    <color name="verde_cp">#006400</color>
+
     <color name="fundo_estacao">#E3F2FD</color>
     <color name="fundo_apeadeiro">#E8F5E9</color>
     <color name="fundo_padrao">#FFFFFF</color>
