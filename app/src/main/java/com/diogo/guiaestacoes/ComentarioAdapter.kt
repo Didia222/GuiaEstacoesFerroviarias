@@ -11,9 +11,13 @@ import com.bumptech.glide.Glide
 import java.text.SimpleDateFormat
 import java.util.*
 
+// [RF-6: Apresentar comentários existentes
+// Este adaptador pega na lista de comentário obtida da base de dados e formata-os para a interface (RecyclerView).
+
 class ComentarioAdapter(private var lista: List<Comentario>) :
     RecyclerView.Adapter<ComentarioAdapter.ComentarioViewHolder>() {
 
+        // Cria a ligação visual (inflação) com o ficheiro XML que desenha o "cartão" do comentário
     class ComentarioViewHolder(v: View) : RecyclerView.ViewHolder(v) {
         val tvAutor: TextView = v.findViewById(R.id.tvAutorItem)
         val tvData: TextView = v.findViewById(R.id.tvDataHoraItem)
@@ -21,6 +25,8 @@ class ComentarioAdapter(private var lista: List<Comentario>) :
         val rbEstrelas: RatingBar = v.findViewById(R.id.rbEstrelasItem)
         val ivFoto: ImageView = v.findViewById(R.id.ivFotoItem)
     }
+
+    // Esta função liga os dados do objeto Comentario aos TextViews e RatingBars no ecrã
 
     fun atualizar(novaLista: List<Comentario>) {
         this.lista = novaLista

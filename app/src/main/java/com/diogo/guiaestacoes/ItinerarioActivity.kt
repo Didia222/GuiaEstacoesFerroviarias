@@ -15,47 +15,51 @@ class ItinerarioActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_itinerario)
 
-        // 1. Configurar Toolbar e Seta de Voltar
+        val comboio = intent.getSerializableExtra("COMBOIO_OBJ") as? Comboio
+        val estacaoAtual = intent.getStringExtra("ESTACAO_ATUAL") ?: ""
+        val destinoPesquisado = intent.getStringExtra("DESTINO_PESQUISADO") ?: ""
+
         val toolbar = findViewById<Toolbar>(R.id.toolbarItinerario)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        // CORREÇÃO: Forçar o clique na seta de voltar
         toolbar.setNavigationOnClickListener { finish() }
+        supportActionBar?.title = "Comboio Nº ${comboio?.numero}"
 
-        // CORREÇÃO: Empurrar a barra para baixo da câmara (Notch)
+        // Ajuste para a câmara frontal
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             v.setPadding(0, statusBars.top, 0, 0)
             insets
         }
 
-        val comboio = intent.getSerializableExtra("COMBOIO_OBJ") as? Comboio
-        val estacaoOrigem = intent.getStringExtra("ESTACAO_ATUAL") ?: ""
-        val destinoPesquisado = intent.getStringExtra("DESTINO_PESQUISADO") ?: ""
+        // Filtra as paragens desde a atual ATÉ ao destino que o user pesquisou
+        val paragensUteis = filtrarAteDestino(comboio, estacaoAtual, destinoPesquisado)
 
-        if (comboio != null) {
-            supportActionBar?.title = "Comboio ${comboio.numero}"
-            val rv = findViewById<RecyclerView>(R.id.rvItinerario)
-            rv.layoutManager = LinearLayoutManager(this)
+        val rv = findViewById<RecyclerView>(R.id.rvItinerario)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = ItinerarioAdapter(paragensUteis, estacaoAtual)
+    }
 
-            if (estacaoOrigem.isNotBlank()) {
-                val origemLimpa = limparTexto(estacaoOrigem)
+    private fun filtrarAteDestino(comboio: Comboio?, atual: String, pesquisado: String): List<Paragem> {
+        if (comboio == null) return emptyList()
+        val lista = comboio.paragens
+        val atualLimpa = limparTexto(atual)
 
-                // Corta o passado
-                var paragens = comboio.paragens.dropWhile { limparTexto(it.estacao) != origemLimpa }
+        // Se houver pesquisa, o fim da lista é a paragem pesquisada.
+        // Se não houver, é o destino final oficial do comboio.
+        val destinoAlvo = if (pesquisado.isNotBlank()) limparTexto(pesquisado) else limparTexto(comboio.destino)
 
-                // Corta o futuro extra se houver pesquisa de destino
-                if (destinoPesquisado.isNotBlank()) {
-                    val destLimpo = limparTexto(destinoPesquisado)
-                    val idx = paragens.indexOfFirst { limparTexto(it.estacao).contains(destLimpo) }
-                    if (idx != -1) paragens = paragens.take(idx + 1)
-                }
+        val indexInicio = lista.indexOfFirst { limparTexto(it.estacao) == atualLimpa }
+        val indexFim = lista.indexOfFirst { limparTexto(it.estacao).contains(destinoAlvo) }
 
-                rv.adapter = ItinerarioAdapter(paragens)
-            } else {
-                rv.adapter = ItinerarioAdapter(comboio.paragens)
+        return when {
+            indexInicio != -1 && indexFim != -1 && indexFim >= indexInicio -> {
+                lista.subList(indexInicio, indexFim + 1)
             }
+            indexInicio != -1 -> {
+                lista.subList(indexInicio, lista.size)
+            }
+            else -> lista
         }
     }
 

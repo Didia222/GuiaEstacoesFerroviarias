@@ -1,10 +1,9 @@
 package com.diogo.guiaestacoes
 
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,7 +22,8 @@ class HorariosActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_horarios)
 
-        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarHorarios)
+        // Configuração da Toolbar Verde com Seta Branca (Certifica-te que o XML tem o Tema Dark)
+        val toolbar = findViewById<Toolbar>(R.id.toolbarHorarios)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -58,12 +58,27 @@ class HorariosActivity : AppCompatActivity() {
             }
     }
 
+    // Filtra a lista para mostrar apenas comboios que ainda vão passar no destino pesquisado
     private fun filtrar(texto: String) {
         val busca = limparTexto(texto)
+        val estacaoAtualLimpa = limparTexto(nomeEstacaoGlobal)
+
         val filtrados = if (texto.isEmpty()) todosOsComboiosDaEstacao
         else todosOsComboiosDaEstacao.filter { c ->
-            c.numero.contains(busca) || c.estacoes_servidas.any { it.contains(busca) }
+            // Pesquisa por número
+            if (c.numero.contains(busca)) return@filter true
+
+            // Lógica de Futuro: Ignora estações por onde o comboio já passou
+            val indexAtual = c.paragens.indexOfFirst { limparTexto(it.estacao) == estacaoAtualLimpa }
+            val paragensFuturas = if (indexAtual != -1) {
+                c.paragens.subList(indexAtual + 1, c.paragens.size)
+            } else {
+                emptyList()
+            }
+
+            paragensFuturas.any { limparTexto(it.estacao).contains(busca) }
         }
+
         exibirResultados(filtrados, texto)
     }
 

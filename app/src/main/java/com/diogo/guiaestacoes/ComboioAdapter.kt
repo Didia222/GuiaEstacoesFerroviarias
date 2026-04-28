@@ -26,8 +26,7 @@ class ComboioAdapter(
 
     private fun limparTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
-        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
-            .replace(normalizado, "").uppercase().trim()
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(normalizado, "").uppercase().trim()
     }
 
     override fun getItemViewType(position: Int): Int = if (items[position] is String) TYPE_HEADER else TYPE_ITEM
@@ -51,57 +50,51 @@ class ComboioAdapter(
             val estacaoLimpa = limparTexto(nomeEstacaoAtual)
             val buscaLimpa = limparTexto(textoPesquisa)
 
-            // 1. Hora na estação atual
-            val paragem = comboio.paragens.find { limparTexto(it.estacao) == estacaoLimpa }
-            val horaChegada = paragem?.hora ?: "--:--"
+            val paragemAtual = comboio.paragens.find { limparTexto(it.estacao) == estacaoLimpa }
+            val horaExata = paragemAtual?.hora ?: "--:--"
 
-            // RF-5: Mostrar Chegada e Partida
-            if (limparTexto(comboio.destino) == estacaoLimpa) {
-                holder.tvHora.text = "Chegada: $horaChegada\n(Terminal)"
+            if (estacaoLimpa == limparTexto(comboio.destino)) {
+                holder.tvHora.text = "Chegada: $horaExata\n(Terminal)"
             } else {
-                holder.tvHora.text = "Chegada: $horaChegada\nPartida: ${simularPartida(horaChegada)}"
+                holder.tvHora.text = "Partida: $horaExata"
             }
 
-            // 2. Feedback da Pesquisa de Destino
             var infoExtra = ""
             if (textoPesquisa.isNotBlank()) {
-                val pDestino = comboio.paragens.find { limparTexto(it.estacao).contains(buscaLimpa) }
+                val indexAtual = comboio.paragens.indexOfFirst { limparTexto(it.estacao) == estacaoLimpa }
+                val paragensFuturas = if (indexAtual != -1) {
+                    comboio.paragens.subList(indexAtual + 1, comboio.paragens.size)
+                } else {
+                    emptyList()
+                }
+
+                val pDestino = paragensFuturas.find { limparTexto(it.estacao).contains(buscaLimpa) }
+
                 if (pDestino != null) {
-                    infoExtra = "\n(Passa por ${pDestino.estacao} às ${pDestino.hora})"
+                    if (limparTexto(pDestino.estacao) == limparTexto(comboio.destino)) {
+                        infoExtra = "\n(Chegada ao destino às ${pDestino.hora})"
+                    } else {
+                        infoExtra = "\n(Passa por ${pDestino.estacao} às ${pDestino.hora})"
+                    }
                 }
             }
 
             holder.tvNumero.text = "Nº ${comboio.numero}"
-            holder.tvRota.text = "${comboio.origem} ➔ ${comboio.destino}$infoExtra"
+            holder.tvRota.text = "$nomeEstacaoAtual ➔ ${comboio.destino}$infoExtra"
+
             holder.tvTipo.text = when(comboio.tipo) {
-                "AP" -> "Alfa Pendular"
-                "IC" -> "Intercidades"
-                "R" -> "Regional"
-                "U" -> "Urbano"
-                else -> comboio.tipo
+                "AP" -> "Alfa Pendular"; "IC" -> "Intercidades"; "R" -> "Regional"; "U" -> "Urbano"; else -> comboio.tipo
             }
 
-            // Clique para abrir Itinerário
             holder.itemView.setOnClickListener {
                 val intent = Intent(it.context, ItinerarioActivity::class.java).apply {
                     putExtra("COMBOIO_OBJ", comboio)
                     putExtra("ESTACAO_ATUAL", nomeEstacaoAtual)
-                    putExtra("DESTINO_PESQUISADO", textoPesquisa)
+                    putExtra("DESTINO_PESQUISADO", textoPesquisa) // PASSAGEM DO DESTINO PESQUISADO
                 }
                 it.context.startActivity(intent)
             }
         }
-    }
-
-    private fun simularPartida(hora: String): String {
-        if (hora == "--:--" || !hora.contains(":")) return "--:--"
-        return try {
-            val partes = hora.split(":")
-            var h = partes[0].toInt()
-            var m = partes[1].toInt() + 2
-            if (m >= 60) { m %= 60; h = (h + 1) % 24 }
-            String.format("%02d:%02d", h, m)
-        } catch (e: Exception) { hora }
     }
 
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
