@@ -21,19 +21,26 @@ import com.google.firebase.storage.FirebaseStorage
 import java.text.Normalizer
 import java.util.UUID
 
+// [FUNCIONALIDADE: RF-7 - Enriquecimento Colaborativo e Gestão de Media]
+// A GaleriaActivity é o principal ecrã de "Crowdsourcing" do projeto.
+// Utiliza os serviços cloud do Firebase para armazenamento de ficheiros binários (Storage) e metadados estruturados (Firestore).
 class GaleriaActivity : AppCompatActivity() {
 
+    // Inicialização dos SDKs.
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private lateinit var idEstacaoLimpo: String
     private lateinit var nomeEstacaoOficial: String
 
+    // Estruturas de dados em memória (Listas)
     private val listaFotos = mutableListOf<String>()
     private lateinit var adapterFotos: FotoAdapter
-
     private val listaComentarios = mutableListOf<Comentario>()
     private lateinit var adapterComentarios: ComentarioAdapter
 
+    // [ARQUITETURA DE INTENTS MODERNOS: ActivityResultContracts]
+    // Utiliza-se a nova API do android para gerir o ciclo de vida do "Picker" de imagens.
+    // É mais seguro e evita "Memory Leaks" em comparação com o antigo `startActivityForResult`.
     private val escolherImagemLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             fazerUploadDaImagem(uri)
@@ -43,10 +50,11 @@ class GaleriaActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_galeria)
-
+        // Recebe o nome da  atividade anterior
         nomeEstacaoOficial = intent.getStringExtra("NOME") ?: "Estação"
         idEstacaoLimpo = limparTexto(nomeEstacaoOficial)
-
+        // [USABILIDADE: RNF-UX / WindowInsets]
+        // Garante que a Toolbar não fica escondida pelo entalhe (Notch) ou câmara frontal do smartphone.
         val toolbar = findViewById<Toolbar>(R.id.toolbarGaleria)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -62,40 +70,44 @@ class GaleriaActivity : AppCompatActivity() {
             v.setPadding(0, statusBars.top, 0, 0)
             insets
         }
-
+        // Configuração do Layout "Grid" (Grelha) para as fotos (Ex: 2 colunas)
         val rvFotos = findViewById<RecyclerView>(R.id.rvFotos)
         rvFotos.layoutManager = GridLayoutManager(this, 2)
         adapterFotos = FotoAdapter(listaFotos)
         rvFotos.adapter = adapterFotos
-
+        // Configuração do Layout "Linear" (Lista de cima para baixo) para os comentários
         val rvComentarios = findViewById<RecyclerView>(R.id.rvComentarios)
         rvComentarios.layoutManager = LinearLayoutManager(this)
         adapterComentarios = ComentarioAdapter(listaComentarios)
         rvComentarios.adapter = adapterComentarios
 
-        // O NOVO BOTÃO DE AVALIAÇÃO
+        // Botão para abrir o ecrã dedicado à Avaliação
         findViewById<Button>(R.id.btnAbrirAvaliacao).setOnClickListener {
             val intent = Intent(this, AvaliacaoActivity::class.java).apply {
                 putExtra("NOME", nomeEstacaoOficial)
             }
             startActivity(intent)
         }
-
+        // O FAB (Floating Action Button) inicia a invocação da galeria do telemóvel
         findViewById<FloatingActionButton>(R.id.fabAdicionarFoto).setOnClickListener {
             escolherImagemLauncher.launch("image/*")
         }
-
+        // [ASSINCRONISMO E REDE]
+        // Os carregamentos começam em background para não travar a abertura inicial do ecrã
         carregarFotosDoFirebase()
         carregarComentariosDoFirebase()
     }
 
+    // [LÓGICA CORE: Pipeline de Upload Binário]
     private fun fazerUploadDaImagem(uri: Uri) {
+        // Identificador Unico Universal
         val nomeFicheiro = "${UUID.randomUUID()}.jpg"
         val ref = storage.reference.child("fotos_estacoes/${idEstacaoLimpo}/${nomeFicheiro}")
 
         Toast.makeText(this, "A fazer upload para a Galeria...", Toast.LENGTH_SHORT).show()
-
+        // Operação Assíncrona 1: Upload físico do ficheiro
         ref.putFile(uri).addOnSuccessListener {
+            // Operação Assíncrona 2: Obter a hiperligação pública
             ref.downloadUrl.addOnSuccessListener { url ->
                 guardarFotoNoFirestore(url.toString())
             }
@@ -103,7 +115,7 @@ class GaleriaActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro no upload", Toast.LENGTH_SHORT).show()
         }
     }
-
+    // [LÓGICA CORE: Escrita de Metadados NoSQL]
     private fun guardarFotoNoFirestore(url: String) {
         val idFoto = db.collection("fotos_estacoes").document().id
         val fotoData = hashMapOf(
@@ -118,7 +130,7 @@ class GaleriaActivity : AppCompatActivity() {
                 Toast.makeText(this, "Foto adicionada à galeria!", Toast.LENGTH_SHORT).show()
             }
     }
-
+    // [LÓGICA CORE: Sincronização de Imagens em Tempo Real]
     private fun carregarFotosDoFirebase() {
         db.collection("fotos_estacoes")
             .whereEqualTo("id_estacao", idEstacaoLimpo)
@@ -136,6 +148,7 @@ class GaleriaActivity : AppCompatActivity() {
             }
     }
 
+    // [LÓGICA CORE: Sincronização e Ordenação Local (RNF-2)]
     private fun carregarComentariosDoFirebase() {
         db.collection("comentarios")
             .whereEqualTo("id_estacao", idEstacaoLimpo)

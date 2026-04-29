@@ -15,6 +15,7 @@ class ItinerarioActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_itinerario)
 
+        // Recebe os dados serializado da activity Horários
         val comboio = intent.getSerializableExtra("COMBOIO_OBJ") as? Comboio
         val estacaoAtual = intent.getStringExtra("ESTACAO_ATUAL") ?: ""
         val destinoPesquisado = intent.getStringExtra("DESTINO_PESQUISADO") ?: ""
@@ -25,14 +26,15 @@ class ItinerarioActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
         supportActionBar?.title = "Comboio Nº ${comboio?.numero}"
 
-        // Ajuste para a câmara frontal
+        // RNF de Adaptabilidade de Hardware. Garante que em telemóveis modernos
+        // a câmara frontal (notch) não sobrepõe a barra e a seta de voltar atrás.
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             v.setPadding(0, statusBars.top, 0, 0)
             insets
         }
 
-        // Filtra as paragens desde a atual ATÉ ao destino que o user pesquisou
+        // Filtra as paragens desde a atual ATÉ ao destino que o utilizador pesquisou
         val paragensUteis = filtrarAteDestino(comboio, estacaoAtual, destinoPesquisado)
 
         val rv = findViewById<RecyclerView>(R.id.rvItinerario)
@@ -40,6 +42,8 @@ class ItinerarioActivity : AppCompatActivity() {
         rv.adapter = ItinerarioAdapter(paragensUteis, estacaoAtual)
     }
 
+    // [LÓGICA CORE - CORTE DINÂMICO]
+    // Esta função corta as extremidades inúteis do array original do comboio.
     private fun filtrarAteDestino(comboio: Comboio?, atual: String, pesquisado: String): List<Paragem> {
         if (comboio == null) return emptyList()
         val lista = comboio.paragens
@@ -48,17 +52,22 @@ class ItinerarioActivity : AppCompatActivity() {
         // Se houver pesquisa, o fim da lista é a paragem pesquisada.
         // Se não houver, é o destino final oficial do comboio.
         val destinoAlvo = if (pesquisado.isNotBlank()) limparTexto(pesquisado) else limparTexto(comboio.destino)
-
+        // 1. Descobre o índice da estação onde o utilizador vai entrar (Ínicio)
         val indexInicio = lista.indexOfFirst { limparTexto(it.estacao) == atualLimpa }
+        // 2. Descobre o índice da estação onde o utilizador vai sair (Fim)
         val indexFim = lista.indexOfFirst { limparTexto(it.estacao).contains(destinoAlvo) }
 
         return when {
+            // Caso ideal: Encontrou o ínicio e o fim e a ordem é logica. Retorna só esse bocado.
             indexInicio != -1 && indexFim != -1 && indexFim >= indexInicio -> {
                 lista.subList(indexInicio, indexFim + 1)
             }
+            // Fallback: Não encontrou o fim (ex: utilizador pesquisou algo que não existe ali), mostra do inicio até ao fim da linha.
+
             indexInicio != -1 -> {
                 lista.subList(indexInicio, lista.size)
             }
+            // Retorna o original apenas se tudo falhar (segurança contra crashes)
             else -> lista
         }
     }

@@ -8,7 +8,10 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ItinerarioAdapter(
+    // O adapter recebe a lista filtrada pela Activity Itinerario
     private val paragens: List<Paragem>,
+    // O Adaptador não precisa saber a origem real do comboio, apenas processa
+    // a "Timeline" visual da posição 0 até à última.
     private val estacaoAtual: String
 ) : RecyclerView.Adapter<ItinerarioAdapter.ViewHolder>() {
 
@@ -21,6 +24,9 @@ class ItinerarioAdapter(
         val paragem = paragens[position]
         holder.tvEstacao.text = paragem.estacao
 
+        // Como o Activity já cortou a lista das estações anteriores e futuras
+        // a posição visual 0 é sempre a estação de partida e a posição final é garantida
+        // ser a de chegada. As outras são pontos de passagem (só hora).
         when (position) {
             0 -> {
                 holder.tvHora.text = "Partida\n${paragem.hora}"
@@ -33,7 +39,7 @@ class ItinerarioAdapter(
                 holder.tvHora.text = paragem.hora
             }
         }
-
+        // Estilização (UI): Destaca a verde e a negrito a estação onde o utilizador se encontra.
         if (paragem.estacao.equals(estacaoAtual, ignoreCase = true)) {
             holder.tvEstacao.text = "${paragem.estacao} (Atual)"
             holder.tvEstacao.setTextColor(Color.parseColor("#00502F"))
