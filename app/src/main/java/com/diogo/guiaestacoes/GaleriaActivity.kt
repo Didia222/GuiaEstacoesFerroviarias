@@ -24,7 +24,7 @@ import java.util.UUID
 // [FUNCIONALIDADE: RF-7 - Enriquecimento Colaborativo e Gestão de Media]
 // A GaleriaActivity é o principal ecrã de "Crowdsourcing" do projeto.
 // Utiliza os serviços cloud do Firebase para armazenamento de ficheiros binários (Storage) e metadados estruturados (Firestore).
-class GaleriaActivity : AppCompatActivity() {
+class GaleriaActivity : BaseActivity() {
 
     // Inicialização dos SDKs.
     private val db = FirebaseFirestore.getInstance()

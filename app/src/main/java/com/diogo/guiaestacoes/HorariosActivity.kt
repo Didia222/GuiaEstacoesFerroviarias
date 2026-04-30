@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.Normalizer
 
-class HorariosActivity : AppCompatActivity() {
+class HorariosActivity : BaseActivity() {
 
     private val db = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView

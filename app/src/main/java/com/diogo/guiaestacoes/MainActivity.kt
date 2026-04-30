@@ -33,7 +33,7 @@ import java.text.Normalizer
 import kotlin.math.*
 import androidx.appcompat.app.AppCompatDelegate
 
-class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+class MainActivity : BaseActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var sugestoesAdapter: SimpleCursorAdapter
     private var todosOsNomesEstacoes: List<String> = emptyList()

@@ -14,7 +14,7 @@ import com.google.firebase.storage.FirebaseStorage
 import java.text.Normalizer
 import java.util.UUID
 
-class AvaliacaoActivity : AppCompatActivity() {
+class AvaliacaoActivity : BaseActivity() {
 
     // Inicialização dos serviços Cloud: Firestore (Base de dados de texto) e Storage (Armazenamento de ficheiros)
     private val db = FirebaseFirestore.getInstance()

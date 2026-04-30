@@ -17,7 +17,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.Normalizer
 
-class DetalhesActivity : AppCompatActivity() {
+class DetalhesActivity : BaseActivity() {
 
     private var isExpanded = false
     private lateinit var db: FirebaseFirestore
