@@ -16,9 +16,10 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var adapter: ComboioAdapter
     private lateinit var svPesquisaHorarios: SearchView
     private var nomeEstacaoGlobal: String = ""
+
     // Guardar a lista original com os dados dos horarios dos comboios
-    //para evitar fazer multiplos pedidos ao servidor quando o utilizador
-    //escreve na barra de pesquisa (RNF-2)
+    // para evitar fazer multiplos pedidos ao servidor quando o utilizador
+    // escreve na barra de pesquisa (RNF-2)
     private var todosOsComboiosDaEstacao = listOf<Comboio>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +46,7 @@ class HorariosActivity : AppCompatActivity() {
         svPesquisaHorarios.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = true
             override fun onQueryTextChange(newText: String?): Boolean {
-                // filtração de texto inserido na  barra de pesquisa como a presença de assentos
-                //para detetar o nome da base de dados que se encontra sem sinais de pontuação
+                // Filtração de texto inserido na barra de pesquisa
                 filtrar(newText ?: "")
                 return true
             }
@@ -55,8 +55,6 @@ class HorariosActivity : AppCompatActivity() {
 
     private fun carregarComboios(nome: String) {
         // Utilização de array-contains do Firestore no campo 'estacoes_servidas'.
-        //Em vez de o programa percorrer todos os comboios presentes na base de dados,
-        //ele devolve apenas os comnoiox que passam na estação selecionada do mapa.
         db.collection("Comboio")
             .whereArrayContains("estacoes_servidas", limparTexto(nome))
             .get()
@@ -73,23 +71,20 @@ class HorariosActivity : AppCompatActivity() {
 
         val filtrados = if (texto.isEmpty()) todosOsComboiosDaEstacao
         else todosOsComboiosDaEstacao.filter { c ->
-            // Capacidade de o utilizador pesquisar um determinado comboio
-            //por o seu numero de identificação
+            // Capacidade de o utilizador pesquisar um determinado comboio pelo número
             if (c.numero.contains(busca)) return@filter true
 
-            //1.Descobrimos a posição da estação atual no array de paragens
+            // 1. Descobrimos a posição da estação atual no array de paragens
             val indexAtual = c.paragens.indexOfFirst { limparTexto(it.estacao) == estacaoAtualLimpa }
-            //2. Isola-se as paregens futuras  usando o sublist
-            //Isso corta os comboios que passaram pelas estações anteriores
-            //á selecionada nao aparerem no resultado da pesquisa
+
+            // 2. Isola-se as paragens futuras usando o sublist
             val paragensFuturas = if (indexAtual != -1) {
                 c.paragens.subList(indexAtual + 1, c.paragens.size)
             } else {
                 emptyList()
             }
 
-            //3. Verificação que na pesquisa existe apenas estações que ainda váo acontecer
-            //como destino do comboio
+            // 3. Verificação que na pesquisa existe apenas estações que ainda vão acontecer
             paragensFuturas.any { limparTexto(it.estacao).contains(busca) }
         }
 
@@ -111,22 +106,28 @@ class HorariosActivity : AppCompatActivity() {
     }
 
     private fun getTipoExtenso(t: String?): String = when(t) {
-        "AP" -> "Alfa Pendular"; "IC" -> "Intercidades"; "R" -> "Regional"; "U" -> "Urbano"; else -> "Outros"
+        "AP" -> "Alfa Pendular"
+        "IC" -> "Intercidades"
+        "R" -> "Regional"
+        "U" -> "Urbano"
+        else -> "Outros"
     }
 
-    // Normalização vital: remove acentos e mete tudo em maiúsculas (ex: "SÃO bento" -> "SAO BENTO")
-    // para evitar erros de case-sensitivity ou utilizadores que não põem acentos.
     // Normalização vital: remove acentos, mete tudo em maiúsculas e corrige inconsistências
     private fun limparTexto(texto: String): String {
         val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
         return "\\p{InCombiningDiacriticalMarks}+".toRegex()
-            .replace(normalizado, "") // Remove acentos (ex: ã -> a)
-            .replace("-", " ")        // Transforma hifens em espaços
-            .replace("/", " ")        // [CORREÇÃO] Transforma barras em espaços
-            .replace("'", " ")        // Transforma apóstrofos em espaços (ex: Sant'Ana)
-            .replace("\\s+".toRegex(), " ") // Se ficarem dois espaços seguidos, reduz para um só
+            .replace(normalizado, "")
+            .replace("-", " ")
+            .replace("/", " ")
+            .replace("'", " ")
+            .replace("\\s+".toRegex(), " ")
             .trim()
             .uppercase()
     }
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
+
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
+    }
 }
