@@ -17,6 +17,8 @@ class HorariosActivity : AppCompatActivity() {
     private lateinit var svPesquisaHorarios: SearchView
     private var nomeEstacaoGlobal: String = ""
 
+
+
     // Guardar a lista original com os dados dos horarios dos comboios
     // para evitar fazer multiplos pedidos ao servidor quando o utilizador
     // escreve na barra de pesquisa (RNF-2)
