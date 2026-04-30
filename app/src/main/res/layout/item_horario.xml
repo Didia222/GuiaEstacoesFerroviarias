@@ -45,11 +45,9 @@
                 android:layout_height="wrap_content"
                 android:text="Comboio 12345"
                 android:textSize="16sp"
+                android:singleLine="true"
                 android:maxLines="1"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="12sp"
-                app:autoSizeMaxTextSize="16sp"
-                app:autoSizeStepGranularity="1sp" />
+                android:ellipsize="end" />
 
 
             <TextView
@@ -59,14 +57,13 @@
                 android:text="Regional"
                 android:textSize="14sp"
                 android:textColor="#666666"
+                android:singleLine="true"
                 android:maxLines="1"
                 android:ellipsize="end" />
         </LinearLayout>
-
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
-
 
 
 
