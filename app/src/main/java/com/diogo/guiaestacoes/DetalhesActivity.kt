@@ -37,10 +37,14 @@ class DetalhesActivity : AppCompatActivity() {
 
         // 1. Recuperar dados passados pela Intent
         nomeEstacao = intent.getStringExtra("NOME") ?: ""
-        val tipo = intent.getStringExtra("TIPO") ?: ""
+
         val historia = intent.getStringExtra("HISTORIA") ?: ""
         val lat = intent.getDoubleExtra("LATITUDE", 0.0)
         val lng = intent.getDoubleExtra("LONGITUDE", 0.0)
+
+        val tipoCompleto = intent.getStringExtra("TIPO") ?: ""
+
+        val tipoLimpo = tipoCompleto.split(" • ")[0]
 
         idEstacaoLimpo = limparTexto(nomeEstacao)
         db = FirebaseFirestore.getInstance()
@@ -61,9 +65,8 @@ class DetalhesActivity : AppCompatActivity() {
             finish()
         }
 
-        // 3. Preencher Dados Básicos da UI
         findViewById<TextView>(R.id.tvTituloDetalhe).text = nomeEstacao
-        findViewById<TextView>(R.id.tvTipoDetalhe).text = tipo
+        findViewById<TextView>(R.id.tvTipoDetalhe).text = tipoLimpo // Usamos o tipo já cortado!
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
         tvConteudo.text = historia
 

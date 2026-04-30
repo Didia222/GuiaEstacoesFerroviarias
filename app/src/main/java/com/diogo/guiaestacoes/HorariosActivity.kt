@@ -116,10 +116,17 @@ class HorariosActivity : AppCompatActivity() {
 
     // Normalização vital: remove acentos e mete tudo em maiúsculas (ex: "SÃO bento" -> "SAO BENTO")
     // para evitar erros de case-sensitivity ou utilizadores que não põem acentos.
-    private fun limparTexto(t: String): String {
-        val n = Normalizer.normalize(t, Normalizer.Form.NFD)
-        return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(n, "").uppercase().trim()
+    // Normalização vital: remove acentos, mete tudo em maiúsculas e corrige inconsistências
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
+            .replace(normalizado, "") // Remove acentos (ex: ã -> a)
+            .replace("-", " ")        // Transforma hifens em espaços
+            .replace("/", " ")        // [CORREÇÃO] Transforma barras em espaços
+            .replace("'", " ")        // Transforma apóstrofos em espaços (ex: Sant'Ana)
+            .replace("\\s+".toRegex(), " ") // Se ficarem dois espaços seguidos, reduz para um só
+            .trim()
+            .uppercase()
     }
-
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }

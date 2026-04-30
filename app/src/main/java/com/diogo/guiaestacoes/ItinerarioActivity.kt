@@ -72,8 +72,16 @@ class ItinerarioActivity : AppCompatActivity() {
         }
     }
 
-    private fun limparTexto(t: String): String {
-        val n = Normalizer.normalize(t, Normalizer.Form.NFD)
-        return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(n, "").uppercase().trim()
+    // Normalização vital: remove acentos, mete tudo em maiúsculas e corrige inconsistências
+    private fun limparTexto(texto: String): String {
+        val normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+        return "\\p{InCombiningDiacriticalMarks}+".toRegex()
+            .replace(normalizado, "") // Remove acentos (ex: ã -> a)
+            .replace("-", " ")        // Transforma hifens em espaços
+            .replace("/", " ")        // [CORREÇÃO] Transforma barras em espaços
+            .replace("'", " ")        // Transforma apóstrofos em espaços (ex: Sant'Ana)
+            .replace("\\s+".toRegex(), " ") // Se ficarem dois espaços seguidos, reduz para um só
+            .trim()
+            .uppercase()
     }
 }

@@ -200,22 +200,41 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val view = layoutInflater.inflate(R.layout.layout_detalhes_estacao, null)
         dialog.setContentView(view)
 
-        var distanciaTexto = ""
+        // 1. Determinar o Tipo Base (Estação ou Apeadeiro)
+        var tipoBase = marker.snippet ?: "Estação Ferroviária"
+
+        // Se for um pino laranja da pesquisa, o snippet é "Fora do raio...", por isso
+        // temos de extrair o verdadeiro tipo lendo a história.
+        if (tipoBase == "Fora do raio de 10km") {
+            tipoBase = if (estacao?.Discricao_hist?.lowercase()?.contains("apeadeiro") == true) "Apeadeiro" else "Estação Ferroviária"
+        }
+
+        // 2. Calcular a Distância Real e formatar o texto
+        var avisoDistancia = ""
         if (localizacaoAtual != null && estacao != null) {
             val km = calcularDistancia(
                 localizacaoAtual!!.latitude, localizacaoAtual!!.longitude,
                 estacao.latitude, estacao.longitude
             )
-            distanciaTexto = " (a ${String.format("%.1f", km)} km de ti)"
+            if (km > 10.0) {
+                avisoDistancia = " • Fora do raio de 10km (a ${String.format("%.1f", km)} km de ti)"
+            }
+        } else if (marker.snippet == "Fora do raio de 10km") {
+            // Fallback: Se o GPS falhou mas sabemos que veio da pesquisa de fora do raio
+            avisoDistancia = " • Fora do raio de 10km"
         }
 
+        // 3. Juntar tudo
+        val subtituloCompleto = "$tipoBase$avisoDistancia"
+
+        // Atualizamos a Bottom Sheet
         view.findViewById<TextView>(R.id.tvNomeEstacao).text = marker.title
-        view.findViewById<TextView>(R.id.tvDescricao).text = "${marker.snippet}$distanciaTexto"
+        view.findViewById<TextView>(R.id.tvDescricao).text = subtituloCompleto
 
         view.findViewById<Button>(R.id.btnVerMais).setOnClickListener {
             val intent = Intent(this, DetalhesActivity::class.java).apply {
                 putExtra("NOME", marker.title)
-                putExtra("TIPO", marker.snippet)
+                putExtra("TIPO", subtituloCompleto)
                 putExtra("HISTORIA", estacao?.Discricao_hist)
                 putExtra("LATITUDE", estacao?.latitude ?: 0.0)
                 putExtra("LONGITUDE", estacao?.longitude ?: 0.0)
