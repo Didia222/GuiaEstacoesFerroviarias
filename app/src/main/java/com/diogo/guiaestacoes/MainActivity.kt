@@ -185,7 +185,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClick
         ativarLocalizacaoUsuario()
         val chipGroup = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFiltros)
         chipGroup?.setOnCheckedChangeListener { _, checkedId ->
-            // Se o utilizador mexer nos chips, limpamos a pesquisa e aplicamos os filtros
+
             val searchView = findViewById<SearchView>(R.id.searchViewEstacoes)
             searchView.setQuery("", false)
             filtrarMarcadoresNoMapa(checkedId)
@@ -238,6 +238,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClick
                 putExtra("HISTORIA", estacao?.Discricao_hist)
                 putExtra("LATITUDE", estacao?.latitude ?: 0.0)
                 putExtra("LONGITUDE", estacao?.longitude ?: 0.0)
+                putExtra("FOTO_CAPA", estacao?.imagemUrl)
             }
             startActivity(intent)
             dialog.dismiss()

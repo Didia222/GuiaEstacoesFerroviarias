@@ -1,8 +1,8 @@
 package com.diogo.guiaestacoes
 
-import androidx.annotation.Keep // <-- ADICIONAR ISTO
+import androidx.annotation.Keep
 
-@Keep // <-- E ISTO
+@Keep
 data class FotoEstacao(
     var id_foto: String = "",
     var id_estacao: String = "",

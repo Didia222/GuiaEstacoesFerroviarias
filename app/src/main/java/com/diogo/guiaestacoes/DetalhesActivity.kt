@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +17,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.Normalizer
+import com.bumptech.glide.Glide
 
 class DetalhesActivity : BaseActivity() {
 
@@ -24,6 +26,7 @@ class DetalhesActivity : BaseActivity() {
 
     private var nomeEstacao: String = ""
     private var idEstacaoLimpo: String = ""
+
 
     private lateinit var adapterComentarios: ComentarioAdapter
     private val listaComentarios = mutableListOf<Comentario>()
@@ -45,6 +48,9 @@ class DetalhesActivity : BaseActivity() {
         val tipoCompleto = intent.getStringExtra("TIPO") ?: ""
 
         val tipoLimpo = tipoCompleto.split(" • ")[0]
+
+
+
 
         idEstacaoLimpo = limparTexto(nomeEstacao)
         db = FirebaseFirestore.getInstance()
@@ -69,6 +75,20 @@ class DetalhesActivity : BaseActivity() {
         findViewById<TextView>(R.id.tvTipoDetalhe).text = tipoLimpo // Usamos o tipo já cortado!
         val tvConteudo = findViewById<TextView>(R.id.tvConteudoDetalhe)
         tvConteudo.text = historia
+
+        val fotoUrl = intent.getStringExtra("FOTO_CAPA")
+        val ivCapa: ImageView = findViewById(R.id.ivCapa)
+
+        if (!fotoUrl.isNullOrEmpty()) {
+            Glide.with(this)
+                .load(fotoUrl)
+                .centerCrop()
+                .placeholder(R.drawable.ic_launcher_background) // Fica enquanto carrega
+                .error(R.drawable.ic_launcher_background)       // Fica se der erro
+                .into(ivCapa)
+        } else {
+            ivCapa.setImageResource(R.drawable.ic_launcher_background)
+        }
 
 
 
